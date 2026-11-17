@@ -124,7 +124,8 @@ The integration gets its own icon: a pond with a koi that sticks its head above 
     with a small script (`scripts/render_icons.py`, resvg).
   - Transparent background, square, trimmed to the content.
 - **Style:** flat with soft gradients, readable at 48 px.
-  - Grey stone rim, blue water with white ripples, an orange-and-white koi with an open mouth, two water
+  - Grey stone rim, blue water with white ripples, an orange-and-white koi seen from the side, its head above the surface and its body visible
+    through the water, two water
     droplets.
   - No text and no Home Assistant marks.
 
