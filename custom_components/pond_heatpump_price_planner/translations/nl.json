@@ -1,0 +1,11 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vijverwarmtepomp",
+        "description": "Stel een prijsplanner voor een vijverwarmtepomp in.",
+        "data": { "name": "Naam" }
+      }
+    }
+  }
+}

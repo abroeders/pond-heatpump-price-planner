@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 92 488 488" width="512" height="512">
+  <defs>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4FB3E8"/>
+      <stop offset="1" stop-color="#1A5F96"/>
+    </linearGradient>
+    <linearGradient id="koi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A2E"/>
+      <stop offset="1" stop-color="#E8590C"/>
+    </linearGradient>
+    <clipPath id="above"><path d="M0 0 H512 V318 C 400 312, 320 316, 250 318 C 180 316, 100 312, 0 318 Z"/></clipPath>
+    <clipPath id="below"><path d="M0 512 V318 C 100 312, 180 316, 250 318 C 320 316, 400 312, 512 318 V512 Z"/></clipPath>
+    <clipPath id="pond"><ellipse cx="256" cy="350" rx="212" ry="102"/></clipPath>
+    <g id="fish">
+      <!-- body, head at origin, tail to the right -->
+      <path d="M0 0 C 14 -52 110 -66 200 -26 L 262 -52 L 246 0 L 262 52 L 200 26 C 110 66 14 52 0 0 Z" fill="url(#koi)"/>
+      <!-- white kohaku patches -->
+      <path d="M70 -46 C 100 -52 140 -44 160 -30 C 140 -10 100 -10 76 -22 Z" fill="#FFFFFF"/>
+      <path d="M150 24 C 170 20 190 22 200 26 C 186 40 164 42 150 24 Z" fill="#FFFFFF"/>
+      <path d="M8 18 C 24 34 50 40 70 36 C 50 22 30 14 8 18 Z" fill="#FFFFFF"/>
+      <!-- pectoral fin -->
+      <path d="M78 22 C 92 50 116 62 132 58 C 118 44 102 30 78 22 Z" fill="#F6B26B" opacity="0.95"/>
+      <!-- dorsal fin -->
+      <path d="M96 -54 C 120 -78 160 -74 180 -36 C 150 -46 124 -52 96 -54 Z" fill="#E8590C"/>
+      <!-- eye -->
+      <circle cx="38" cy="-14" r="11" fill="#FFFFFF"/>
+      <circle cx="35" cy="-14" r="6" fill="#111"/>
+      <!-- mouth and barbel -->
+      <path d="M-2 -4 C 6 2 6 8 -2 12" stroke="#5A1A0A" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M8 10 C 4 22 -4 28 -12 30" stroke="#B5400A" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <!-- stones and water -->
+  <ellipse cx="256" cy="352" rx="236" ry="124" fill="#B9BFC5"/>
+  <ellipse cx="256" cy="346" rx="236" ry="118" fill="#D5DADF"/>
+  <ellipse cx="256" cy="350" rx="212" ry="102" fill="url(#water)"/>
+  <!-- fish: underwater part seen through the water, head above the surface -->
+  <g clip-path="url(#pond)"><g clip-path="url(#below)" opacity="0.5">
+    <use href="#fish" transform="translate(214 196) rotate(64)"/>
+  </g></g>
+  <g clip-path="url(#above)">
+    <use href="#fish" transform="translate(214 196) rotate(64)"/>
+  </g>
+  <!-- ripples around the fish -->
+  <ellipse cx="262" cy="320" rx="80" ry="20" fill="none" stroke="#FFFFFF" stroke-width="7" opacity="0.85"/>
+  <ellipse cx="262" cy="328" rx="140" ry="38" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.45"/>
+  <!-- droplets -->
+  <path d="M168 196 c -8 12 -8 20 0 22 c 8 -2 8 -10 0 -22 z" fill="#4FB3E8"/>
+  <path d="M318 214 c -7 10 -7 17 0 19 c 7 -2 7 -9 0 -19 z" fill="#4FB3E8"/>
+</svg>
