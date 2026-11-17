@@ -16,7 +16,7 @@ Until version 0.1.0 the target was a number entity; it is removed automatically.
 
 | Key | Type | Unit / options | Meaning |
 |---|---|---|---|
-| `band` | number | K, 0.1–1.0, step 0.05 | the pond may move this far above and below the target |
+| `band` | number | °C, 0.1–1.0, step 0.05 | the pond may move this far above and below the target |
 | `pond_volume` | number | m³, 1–500, step 0.25 | water volume; needed for the pond COP, heat loss and thermal power |
 | `flow` | number | m³/h, 0.5–20, step 0.25 | flow through the heat pump; needed for the flow COP |
 | `control` | switch | on/off | off: plan and show only (dry run); on: control the heat pump |
