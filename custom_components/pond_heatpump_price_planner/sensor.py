@@ -39,15 +39,21 @@ def _plan_list(c: PlannerCoordinator) -> list[dict[str, Any]]:
     plan = c.data.plan
     if plan is None:
         return []
-    return [
-        {
+    known = c.data.known_quarters
+    surplus = c.data.surplus
+    out = []
+    for i, m in enumerate(plan.modes[:PLAN_ATTRIBUTE_QUARTERS]):
+        item = {
             "start": _ts(plan.start + i * 900).isoformat(),
             "mode": m,
             "temp": round(plan.temps[i], 2),
             "price": round(plan.prices[i], 4),
+            "known": i < known,
         }
-        for i, m in enumerate(plan.modes[:PLAN_ATTRIBUTE_QUARTERS])
-    ]
+        if surplus is not None and i < len(surplus):
+            item["surplus"] = round(surplus[i], 3)
+        out.append(item)
+    return out
 
 
 def _cop_attrs(result: CopResult | None, c: PlannerCoordinator) -> dict[str, Any]:
@@ -214,6 +220,7 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
             "reports": c.store.extra.get("reports", []),
             "model_check": _d(c).model_check,
             "samples": len(c.store.samples),
+            "links": dict(c.links),  # linked entities, used by the Lovelace card as defaults
         },
     ),
     PlannerSensorDescription(

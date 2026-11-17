@@ -2,6 +2,8 @@
   "domain": "pond_heatpump_price_planner",
   "name": "Pond Heat Pump Price Planner",
   "after_dependencies": [
+    "frontend",
+    "http",
     "recorder",
     "weather"
   ],

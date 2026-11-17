@@ -89,6 +89,9 @@ DEFAULT_SETTINGS = {
 
 TARGET_MIN, TARGET_MAX, TARGET_STEP = 5.0, 28.0, 0.1  # °C, climate entity
 
+CARD_FILE = "pond-heatpump-planner-card.js"
+CARD_URL = f"/{DOMAIN}/{CARD_FILE}"
+
 LEARN_TIME = (3, 30)  # local time of the nightly learning
 TUNING_DAYS = 14
 PREDICTION_HOURS = 4
