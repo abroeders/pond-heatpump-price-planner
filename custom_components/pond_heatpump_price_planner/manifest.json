@@ -1,0 +1,14 @@
+{
+  "domain": "pond_heatpump_price_planner",
+  "name": "Pond Heat Pump Price Planner",
+  "after_dependencies": ["recorder", "weather"],
+  "codeowners": ["@abroeders"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/abroeders/pond-heatpump-price-planner",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/abroeders/pond-heatpump-price-planner/issues",
+  "requirements": [],
+  "version": "0.0.0"
+}
