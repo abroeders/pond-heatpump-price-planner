@@ -2,10 +2,233 @@
   "config": {
     "step": {
       "user": {
-        "title": "Pond heat pump",
-        "description": "Set up a price planner for a pond heat pump.",
-        "data": { "name": "Name" }
+        "title": "Pond and heat pump",
+        "description": "Link the pond temperature, the heat pump and its power. The next steps (prices, solar, COP) are optional.",
+        "data": {
+          "name": "Name",
+          "pond_temperature": "Pond temperature",
+          "heat_pump": "Heat pump",
+          "power": "Heat pump power",
+          "inlet_temperature": "Water inlet temperature of the heat pump",
+          "outdoor_temperature": "Outdoor temperature"
+        },
+        "data_description": {
+          "heat_pump": "Its setpoint is changed to switch between off, low and high.",
+          "inlet_temperature": "The setpoint follows this temperature. Without it, the rounded pond temperature is used."
+        }
+      },
+      "prices": {
+        "title": "Prices and weather",
+        "description": "Optional. Without a price sensor the planner only minimises energy. Without a weather entity it uses the current outdoor temperature for the whole horizon.",
+        "data": {
+          "price": "Price sensor",
+          "price_forecast": "Price forecast sensor",
+          "weather": "Weather"
+        },
+        "data_description": {
+          "price": "A sensor with a list of today's and tomorrow's prices in its attributes.",
+          "price_forecast": "Extends the horizon beyond the known prices, e.g. a day-ahead price forecast.",
+          "weather": "Its hourly forecast gives the outdoor temperature over the horizon."
+        }
+      },
+      "solar": {
+        "title": "Solar power",
+        "description": "Optional. Own solar surplus is valued at the feed-in price (see the options). Leave empty if you do not want this.",
+        "data": {
+          "surplus": "Solar surplus sensor",
+          "surplus_type": "Type of this sensor",
+          "solar_forecast": "Solar forecast sensor"
+        },
+        "data_description": {
+          "solar_forecast": "Hourly PV forecast; without it the surplus only counts for the current quarter."
+        }
+      },
+      "cop": {
+        "title": "COP",
+        "description": "Optional. With the water outlet temperature (and the inlet from step 1) the COP is calculated from the flow. The pond method needs no extra sensor.",
+        "data": {
+          "outlet_temperature": "Water outlet temperature of the heat pump",
+          "energy": "Heat pump energy",
+          "air_inlet_temperature": "Air inlet temperature of the heat pump"
+        },
+        "data_description": {
+          "energy": "Energy counter; without it the power sensor is integrated.",
+          "air_inlet_temperature": "Used for the COP per outdoor temperature; without it the outdoor sensor is used."
+        }
+      },
+      "reconfigure": {
+        "title": "Pond and heat pump",
+        "description": "Change the linked entities. Optional links can be emptied to remove them.",
+        "data": {
+          "pond_temperature": "Pond temperature",
+          "heat_pump": "Heat pump",
+          "power": "Heat pump power",
+          "inlet_temperature": "Water inlet temperature of the heat pump",
+          "outdoor_temperature": "Outdoor temperature"
+        },
+        "data_description": {
+          "heat_pump": "Its setpoint is changed to switch between off, low and high.",
+          "inlet_temperature": "The setpoint follows this temperature. Without it, the rounded pond temperature is used."
+        }
       }
+    },
+    "error": {
+      "price_not_recognised": "This sensor has no price list in a recognised format."
+    },
+    "abort": {
+      "already_configured": "This heat pump already has a planner.",
+      "reconfigure_successful": "The links have been updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Planner settings",
+        "description": "Changes take effect immediately (the planner restarts).",
+        "data": {
+          "price_multiplier": "Price multiplier",
+          "price_addition": "Price addition",
+          "forecast_multiplier": "Price forecast multiplier",
+          "forecast_addition": "Price forecast addition",
+          "feed_in_multiplier": "Feed-in multiplier",
+          "feed_in_addition": "Feed-in addition",
+          "base_load": "Household base load",
+          "start_penalty": "Penalty per start",
+          "margin": "Margin inside the band",
+          "allow_high": "Allow high power",
+          "surcharge_auto": "Tune the expensive-quarter surcharge automatically",
+          "surcharge": "Expensive-quarter surcharge (manual)",
+          "horizon": "Planning horizon",
+          "offset_off": "Setpoint offset off",
+          "offset_low": "Setpoint offset low",
+          "offset_high": "Setpoint offset high",
+          "low_w": "Power threshold off/low",
+          "high_w": "Power threshold low/high",
+          "cop_window": "COP window",
+          "run_threshold": "COP: running above",
+          "settle_minutes": "COP: settle time after a start"
+        },
+        "data_description": {
+          "price_multiplier": "Effective price = price × multiplier + addition. For a bare exchange price in the Netherlands: 1.21 and about 0.136.",
+          "feed_in_multiplier": "Value of own solar power. Equal to the purchase price (1 and 0) means net metering: solar then does not change the plan.",
+          "start_penalty": "Higher: fewer starts at a slightly higher cost.",
+          "margin": "The plan stays this far inside the band to absorb prediction errors.",
+          "surcharge_auto": "Every night the last 14 days are replayed and the surcharge with the lowest real cost is chosen.",
+          "offset_low": "Setpoint = rounded inlet temperature + offset of the mode."
+        }
+      }
+    }
+  },
+  "selector": {
+    "surplus_type": {
+      "options": {
+        "pv_power": "PV power (W)",
+        "grid_export": "Grid export (W)",
+        "grid_net": "Net grid power (W, export negative)"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mode": {
+        "name": "Mode",
+        "state": {
+          "off": "Off",
+          "low": "Low",
+          "high": "High"
+        }
+      },
+      "next_start": {
+        "name": "Next start"
+      },
+      "next_stop": {
+        "name": "Next stop"
+      },
+      "planned_energy": {
+        "name": "Planned energy next 24 h"
+      },
+      "planned_cost": {
+        "name": "Planned cost next 24 h"
+      },
+      "predicted_temperature": {
+        "name": "Predicted pond temperature in 4 h"
+      },
+      "cop": {
+        "name": "COP"
+      },
+      "cop_flow": {
+        "name": "COP flow method"
+      },
+      "cop_pond": {
+        "name": "COP pond method"
+      },
+      "heat_loss": {
+        "name": "Heat loss"
+      },
+      "thermal_power": {
+        "name": "Thermal power"
+      },
+      "cooling_coefficient": {
+        "name": "Cooling coefficient"
+      },
+      "heating_rate_low": {
+        "name": "Heating rate low"
+      },
+      "heating_rate_high": {
+        "name": "Heating rate high"
+      },
+      "prediction_error": {
+        "name": "Prediction error"
+      },
+      "model_status": {
+        "name": "Model learned"
+      },
+      "surcharge": {
+        "name": "Expensive-quarter surcharge"
+      }
+    },
+    "number": {
+      "target": {
+        "name": "Target temperature"
+      },
+      "band": {
+        "name": "Band"
+      },
+      "pond_volume": {
+        "name": "Pond volume"
+      },
+      "flow": {
+        "name": "Flow through the heat pump"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Control the heat pump"
+      },
+      "insulation_cover": {
+        "name": "Insulation cover"
+      }
+    },
+    "select": {
+      "cop_method": {
+        "name": "COP method",
+        "state": {
+          "flow": "Flow method",
+          "pond": "Pond method",
+          "average": "Average of both"
+        }
+      }
+    },
+    "button": {
+      "relearn": {
+        "name": "Learn now"
+      }
+    }
+  },
+  "issues": {
+    "heat_pump_not_following": {
+      "title": "Heat pump does not follow the planner",
+      "description": "{entity} has not followed the mode set by the planner for two hours. Check that the heat pump is on, that no other automation changes its setpoint, and that the setpoint offsets in the options suit this heat pump."
     }
   }
 }

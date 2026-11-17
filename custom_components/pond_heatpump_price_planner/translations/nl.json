@@ -2,10 +2,233 @@
   "config": {
     "step": {
       "user": {
-        "title": "Vijverwarmtepomp",
-        "description": "Stel een prijsplanner voor een vijverwarmtepomp in.",
-        "data": { "name": "Naam" }
+        "title": "Vijver en warmtepomp",
+        "description": "Koppel de vijvertemperatuur, de warmtepomp en zijn vermogen. De volgende stappen (prijzen, zon, COP) zijn optioneel.",
+        "data": {
+          "name": "Naam",
+          "pond_temperature": "Vijvertemperatuur",
+          "heat_pump": "Warmtepomp",
+          "power": "Vermogen warmtepomp",
+          "inlet_temperature": "Waterinlaattemperatuur van de warmtepomp",
+          "outdoor_temperature": "Buitentemperatuur"
+        },
+        "data_description": {
+          "heat_pump": "Het setpoint wordt aangepast om te wisselen tussen uit, laag en hoog.",
+          "inlet_temperature": "Het setpoint volgt deze temperatuur. Zonder deze sensor wordt de afgeronde vijvertemperatuur gebruikt."
+        }
+      },
+      "prices": {
+        "title": "Prijzen en weer",
+        "description": "Optioneel. Zonder prijssensor beperkt de planner alleen het verbruik. Zonder weerentiteit gebruikt hij de huidige buitentemperatuur voor de hele horizon.",
+        "data": {
+          "price": "Prijssensor",
+          "price_forecast": "Prijsverwachting",
+          "weather": "Weer"
+        },
+        "data_description": {
+          "price": "Een sensor met een lijst van de prijzen van vandaag en morgen in de attributen.",
+          "price_forecast": "Verlengt de horizon voorbij de bekende prijzen, bijvoorbeeld een day-ahead-prijsverwachting.",
+          "weather": "De uurverwachting geeft de buitentemperatuur over de horizon."
+        }
+      },
+      "solar": {
+        "title": "Zonnestroom",
+        "description": "Optioneel. Eigen zonne-overschot telt tegen het terugleveringstarief (zie de opties). Laat leeg als je dit niet wilt.",
+        "data": {
+          "surplus": "Sensor zonne-overschot",
+          "surplus_type": "Soort sensor",
+          "solar_forecast": "PV-verwachting"
+        },
+        "data_description": {
+          "solar_forecast": "PV-verwachting per uur; zonder deze telt het overschot alleen voor het huidige kwartier."
+        }
+      },
+      "cop": {
+        "title": "COP",
+        "description": "Optioneel. Met de wateruitlaattemperatuur (en de inlaat uit stap 1) wordt de COP uit het debiet berekend. De vijvermethode heeft geen extra sensor nodig.",
+        "data": {
+          "outlet_temperature": "Wateruitlaattemperatuur van de warmtepomp",
+          "energy": "Energie warmtepomp",
+          "air_inlet_temperature": "Luchtinlaattemperatuur van de warmtepomp"
+        },
+        "data_description": {
+          "energy": "Energieteller; zonder deze wordt het vermogen geïntegreerd.",
+          "air_inlet_temperature": "Voor de COP per buitentemperatuur; zonder deze wordt de buitensensor gebruikt."
+        }
+      },
+      "reconfigure": {
+        "title": "Vijver en warmtepomp",
+        "description": "Wijzig de gekoppelde entiteiten. Optionele koppelingen kun je leegmaken om ze te verwijderen.",
+        "data": {
+          "pond_temperature": "Vijvertemperatuur",
+          "heat_pump": "Warmtepomp",
+          "power": "Vermogen warmtepomp",
+          "inlet_temperature": "Waterinlaattemperatuur van de warmtepomp",
+          "outdoor_temperature": "Buitentemperatuur"
+        },
+        "data_description": {
+          "heat_pump": "Het setpoint wordt aangepast om te wisselen tussen uit, laag en hoog.",
+          "inlet_temperature": "Het setpoint volgt deze temperatuur. Zonder deze sensor wordt de afgeronde vijvertemperatuur gebruikt."
+        }
       }
+    },
+    "error": {
+      "price_not_recognised": "Deze sensor heeft geen prijslijst in een bekend formaat."
+    },
+    "abort": {
+      "already_configured": "Deze warmtepomp heeft al een planner.",
+      "reconfigure_successful": "De koppelingen zijn bijgewerkt."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Instellingen planner",
+        "description": "Wijzigingen gelden meteen (de planner herstart).",
+        "data": {
+          "price_multiplier": "Prijsvermenigvuldiger",
+          "price_addition": "Prijsopslag",
+          "forecast_multiplier": "Vermenigvuldiger prijsverwachting",
+          "forecast_addition": "Opslag prijsverwachting",
+          "feed_in_multiplier": "Vermenigvuldiger teruglevering",
+          "feed_in_addition": "Opslag teruglevering",
+          "base_load": "Basisverbruik huishouden",
+          "start_penalty": "Boete per start",
+          "margin": "Marge binnen de band",
+          "allow_high": "Hoog vermogen toestaan",
+          "surcharge_auto": "Toeslag op dure kwartieren automatisch kiezen",
+          "surcharge": "Toeslag op dure kwartieren (handmatig)",
+          "horizon": "Planningshorizon",
+          "offset_off": "Setpoint-offset uit",
+          "offset_low": "Setpoint-offset laag",
+          "offset_high": "Setpoint-offset hoog",
+          "low_w": "Vermogensgrens uit/laag",
+          "high_w": "Vermogensgrens laag/hoog",
+          "cop_window": "COP-venster",
+          "run_threshold": "COP: draait vanaf",
+          "settle_minutes": "COP: stabilisatietijd na een start"
+        },
+        "data_description": {
+          "price_multiplier": "Effectieve prijs = prijs × vermenigvuldiger + opslag. Voor een kale beursprijs in Nederland: 1,21 en ongeveer 0,136.",
+          "feed_in_multiplier": "Waarde van eigen zonnestroom. Gelijk aan de inkoopprijs (1 en 0) betekent salderen: zon verandert het plan dan niet.",
+          "start_penalty": "Hoger: minder starts tegen iets hogere kosten.",
+          "margin": "Het plan blijft zo ver binnen de band om voorspelfouten op te vangen.",
+          "surcharge_auto": "Elke nacht worden de laatste 14 dagen opnieuw afgespeeld en wordt de toeslag met de laagste echte kosten gekozen.",
+          "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand."
+        }
+      }
+    }
+  },
+  "selector": {
+    "surplus_type": {
+      "options": {
+        "pv_power": "PV-vermogen (W)",
+        "grid_export": "Teruglevering (W)",
+        "grid_net": "Netto netvermogen (W, teruglevering negatief)"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mode": {
+        "name": "Stand",
+        "state": {
+          "off": "Uit",
+          "low": "Laag",
+          "high": "Hoog"
+        }
+      },
+      "next_start": {
+        "name": "Volgende start"
+      },
+      "next_stop": {
+        "name": "Volgende stop"
+      },
+      "planned_energy": {
+        "name": "Gepland verbruik komende 24 uur"
+      },
+      "planned_cost": {
+        "name": "Geplande kosten komende 24 uur"
+      },
+      "predicted_temperature": {
+        "name": "Voorspelde vijvertemperatuur over 4 uur"
+      },
+      "cop": {
+        "name": "COP"
+      },
+      "cop_flow": {
+        "name": "COP debietmethode"
+      },
+      "cop_pond": {
+        "name": "COP vijvermethode"
+      },
+      "heat_loss": {
+        "name": "Warmteverlies"
+      },
+      "thermal_power": {
+        "name": "Thermisch vermogen"
+      },
+      "cooling_coefficient": {
+        "name": "Afkoelcoëfficiënt"
+      },
+      "heating_rate_low": {
+        "name": "Opwarmsnelheid laag"
+      },
+      "heating_rate_high": {
+        "name": "Opwarmsnelheid hoog"
+      },
+      "prediction_error": {
+        "name": "Voorspelfout"
+      },
+      "model_status": {
+        "name": "Model geleerd"
+      },
+      "surcharge": {
+        "name": "Toeslag dure kwartieren"
+      }
+    },
+    "number": {
+      "target": {
+        "name": "Streeftemperatuur"
+      },
+      "band": {
+        "name": "Band"
+      },
+      "pond_volume": {
+        "name": "Vijvervolume"
+      },
+      "flow": {
+        "name": "Debiet door de warmtepomp"
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Warmtepomp aansturen"
+      },
+      "insulation_cover": {
+        "name": "Isolatiekap"
+      }
+    },
+    "select": {
+      "cop_method": {
+        "name": "COP-methode",
+        "state": {
+          "flow": "Debietmethode",
+          "pond": "Vijvermethode",
+          "average": "Gemiddelde van beide"
+        }
+      }
+    },
+    "button": {
+      "relearn": {
+        "name": "Nu leren"
+      }
+    }
+  },
+  "issues": {
+    "heat_pump_not_following": {
+      "title": "Warmtepomp volgt de planner niet",
+      "description": "{entity} volgt al twee uur niet de stand die de planner instelt. Controleer of de warmtepomp aan staat, of geen andere automatisering het setpoint verandert, en of de setpoint-offsets in de opties bij deze warmtepomp passen."
     }
   }
 }

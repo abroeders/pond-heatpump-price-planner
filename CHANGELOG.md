@@ -6,8 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-17
+
 ### Added
 
-- Repository scaffold: HACS layout, CI (hassfest, HACS validation, ruff, pytest), issue templates.
-- Minimal integration that can be added through the UI (no entities yet).
+- Thermal model of the pond, learned every night from quarter-hour samples (42 days), seeded from the
+  recorder; follows an insulation cover within a week.
+- Planner: cost-optimal off/low/high per quarter over 24–36 h (dynamic programming), with prices from common
+  price sensors, an optional price forecast, the weather forecast and optional solar surplus.
+- Expensive-quarter surcharge, tuned every night on the last 14 days.
+- Safety rules with hysteresis, setpoint control relative to the heat pump's inlet temperature, dry run,
+  and a repair issue when the heat pump does not follow.
+- COP by the flow method and the pond method (or their average), heat loss (W/K) and thermal power (W).
+- Config flow in four steps, reconfigure, options, sensors, settings entities, diagnostics; English and Dutch.
+- Documentation: installation guide, configuration and entity reference, how it works, COP formulas,
+  dashboard examples, troubleshooting, FAQ, architecture with UML diagrams.
 - Integration icon (pond with a koi), light and dark variants.
+
+### Requirements
+
+- Home Assistant 2026.3 or later.
+
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/abroeders/pond-heatpump-price-planner/releases/tag/v0.1.0
