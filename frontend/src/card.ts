@@ -5,7 +5,7 @@ import { plannerDevices } from "./entities";
 import { PhpcGauge } from "./gauge";
 import { illustration, illustrationStyles } from "./illustration";
 import { localizer, type Localizer } from "./localize";
-import { planChart, planChartStyles } from "./plan-chart";
+import { planChart, planChartStyles, planLegend } from "./plan-chart";
 import { figures, modelSection, nextLine, sectionStyles, switches } from "./sections";
 import type { CardConfig, HomeAssistant, Section } from "./types";
 import { buildViewModel, type CardViewModel } from "./viewmodel";
@@ -79,7 +79,7 @@ export class PondHeatpumpPlannerCard extends LitElement {
             </div>`
           : nothing;
       case "plan":
-        return vm.plan ? html`<div class="section">${planChart(vm.plan, t, language)}</div>` : nothing;
+        return vm.plan ? html`<div class="section">${planChart(vm.plan, t, language)}${planLegend(vm.plan, t)}</div>` : nothing;
       case "figures":
         return vm.figures ? html`<div class="section">${figures(vm.figures, t)}</div>` : nothing;
       case "switches":

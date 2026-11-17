@@ -147,7 +147,7 @@ export class PhpcGauge extends LitElement {
         ${m.bandEntity === null ? nothing : html`
           <div class="band-slider">
             <span class="caption">${t("band")}</span>
-            <span class="number">± ${band.toFixed(2)} K</span>
+            <span class="number">± ${band.toFixed(2)} °C</span>
             <input type="range" min=${BAND_MIN} max=${BAND_MAX} step=${BAND_STEP} .value=${String(band)}
               aria-label=${t("band")} @input=${this.onSlider} @keydown=${(e: KeyboardEvent) => this.onKey(e, "band")}/>
           </div>`}
