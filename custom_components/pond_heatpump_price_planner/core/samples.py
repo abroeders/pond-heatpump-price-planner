@@ -26,14 +26,17 @@ class Sample:
     outdoor: float | None  # outdoor temperature at the end of the quarter (°C)
     power: float | None  # mean heat pump power over the quarter (W)
     cover: bool = False  # insulation cover switch
+    price: float | None = None  # effective purchase price of the quarter (€/kWh)
 
     def to_list(self) -> list:
-        return [self.t, self.pond, self.outdoor, self.power, int(self.cover)]
+        return [self.t, self.pond, self.outdoor, self.power, int(self.cover), self.price]
 
     @classmethod
     def from_list(cls, row: list) -> Sample:
         t, pond, outdoor, power, *rest = row
-        return cls(float(t), pond, outdoor, power, bool(rest[0]) if rest else False)
+        cover = bool(rest[0]) if rest else False
+        price = rest[1] if len(rest) > 1 else None
+        return cls(float(t), pond, outdoor, power, cover, price)
 
 
 class PowerIntegrator:

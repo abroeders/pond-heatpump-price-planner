@@ -50,8 +50,10 @@ def test_to_quarters_takes_end_temperature_and_mean_power():
 
 
 def test_sample_roundtrip_prune_and_merge():
-    s = Sample(900.0, 14.2, 6.1, 390.0, True)
+    s = Sample(900.0, 14.2, 6.1, 390.0, True, 0.31)
     assert Sample.from_list(s.to_list()) == s
+    old_format = Sample.from_list([0, 1.0, 2.0, 3.0, 1])  # stored before prices were kept
+    assert old_format.cover is True and old_format.price is None
     assert Sample.from_list([0, 1.0, 2.0, 3.0]).cover is False
     old = [Sample(0, 1, 1, 1), Sample(900, 1, 1, 1)]
     new = [Sample(900, 2, 2, 2)]
