@@ -107,8 +107,8 @@ An inline SVG of the installation as a simple process diagram:
                     │  ( fan )   [comp]    │
                     │   mode · electrical  │
                     │          · thermal   │
-                    │   ┌─[ /\/\/\ ]─┐   │  heat exchanger
-                    └───┼──── 17 °C ───┼───┘
+        liquid 17 °C │ ┌─[ /\/\/\ ]─┐ gas 52 °C
+                    └───┼─ heat exch. ─┼───┘
      ┌──── P ───────────┘ water in     └ water out ──┐
      │  pump · running · 43 % · 103 W                │
      │ supply                                 return │
@@ -125,7 +125,7 @@ An inline SVG of the installation as a simple process diagram:
 |---|---|---|
 | Pond | water temperature in the tub | the planner's thermostat (`current_temperature`) |
 | Water in / water out | value at the supply and return pipes, below the housing | `water_in`, `water_out` (temperature) |
-| Heat exchanger | temperature below the heat exchanger | `heat_exchanger` (temperature, e.g. the condenser temperature) |
+| Refrigerant after the heat exchanger | value at the liquid line where it leaves the heat exchanger. In counterflow the refrigerant leaves at the cold-water side, so this is the subcooled liquid temperature (on the reference heat pump the sensor called "condenser temperature": 17 °C with water 14 → 16 °C and hot gas 52 °C) | `liquid` (temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
 | Electrical and thermal power | both on the housing, one under the other | `power`, the planner's `thermal_power` |
 | Mode | label (off/low/high) on the housing | the planner's `mode` |
@@ -140,7 +140,7 @@ An inline SVG of the installation as a simple process diagram:
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
 others are left for the user. On the reference installation:
 - `air_out`: `sensor.w_eau_heatpump_air_outlet_temperature`;
-- `heat_exchanger`: `sensor.w_eau_heatpump_condensor_temperature`;
+- `liquid`: `sensor.w_eau_heatpump_condensor_temperature`;
 - `gas`: `sensor.w_eau_heatpump_gas_out_temperature`;
 - `fan`: `binary_sensor.w_eau_heatpump_fan_active`;
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
@@ -292,7 +292,7 @@ heat_pump:                           # all optional; prefilled from the planner
   water_out: sensor.w_eau_heatpump_water_outlet_temperature
   air_in: sensor.w_eau_heatpump_air_inlet_temperature
   air_out: sensor.w_eau_heatpump_air_outlet_temperature
-  heat_exchanger: sensor.w_eau_heatpump_condensor_temperature
+  liquid: sensor.w_eau_heatpump_condensor_temperature
   gas: sensor.w_eau_heatpump_gas_out_temperature
   power: sensor.warmtepomp_vijver_power
   fan: binary_sensor.w_eau_heatpump_fan_active
