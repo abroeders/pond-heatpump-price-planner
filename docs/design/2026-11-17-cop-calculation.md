@@ -1,7 +1,7 @@
 # COP calculation
 
 - Issue: #8
-- Status: **approved** (2026-11-17); §6 heat loss and thermal power added 2026-11-17, **draft**
+- Status: **approved** (2026-11-17); §6–7 heat loss, thermal power and number entities added 2026-11-17
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -61,8 +61,9 @@ heat_kW = flow_m3h × 1.163 × (T_water_out − T_water_in)
   the same counted intervals.
   - Counter resets and decreases are ignored.
   - Without an energy sensor, power is integrated instead (§3.3).
-- Heat and electricity are accumulated per hour into buckets: counted minutes, heat in kWh, electricity
-  in kWh, mean power and mean air/outdoor temperature. These are stored with the samples of #2 (42 days).
+- Heat and electricity are accumulated per hour into buckets: counted minutes, heat per unit of flow
+  (kWh per m³/h, so the flow can be changed afterwards), electricity in kWh, mean power and mean
+  air/outdoor temperature. These are stored with the samples of #2 (42 days).
 
 ### 3.2 Results
 
@@ -78,7 +79,7 @@ heat_kW = flow_m3h × 1.163 × (T_water_out − T_water_in)
 |---|---|---|
 | Water inlet / outlet temperature sensors | – | Required for this method |
 | Energy sensor | – | Optional; otherwise the power sensor is integrated |
-| Flow (m³/h) | 3.0 | Step 0.25; one step shifts the COP by ~9 % at 3 m³/h |
+| Flow through the heat pump (m³/h) | 3.0 | Number entity, 0.5–20 m³/h, step 0.1; 0.25 m³/h shifts the COP by ~9 % at 3 m³/h |
 | Run threshold (W) | 100 | |
 | Settle time (min) | 20 | |
 | Window (days) | 14 | 7–42 |
@@ -110,7 +111,7 @@ loss instead of the single neighbouring off-period, which is less noisy and need
 
 | Option | Default |
 |---|---|
-| Pond volume (m³) | – (method disabled when empty) |
+| Pond volume (m³) | – (method disabled when empty); number entity, 1–500 m³, step 0.1 |
 | Loss window (days) | 21 |
 
 ### 4.3 Limits
@@ -145,6 +146,17 @@ in low mode and ≈ 0.209 × 0.918 × 24.4 × 1000 ≈ **4.7 kW** in high mode.
 
 ## 7. Entities (added to #5)
 
+Pond volume and flow are **number entities** (entity category *config*, restored after a restart), so they
+can be adjusted on the device page without reconfiguring the integration. Changing them recalculates the
+COP, heat loss and thermal power at once; the stored hourly buckets keep heat per unit of flow, so a new
+flow applies to the whole window.
+
+| Entity | Unit | Range, step |
+|---|---|---|
+| `number.<name>_pond_volume` | m³ | 1–500, 0.1 (0 or unset: pond method, heat loss and thermal power unavailable) |
+| `number.<name>_flow` | m³/h | 0.5–20, 0.1 (unset: flow method unavailable) |
+
+
 | Entity | State | Attributes |
 |---|---|---|
 | `sensor.<name>_cop_flow` | COP over the window | `cumulative`, `by_outdoor`, `by_power`, `hours`, `window_days`, `flow` |
@@ -161,7 +173,7 @@ in low mode and ≈ 0.209 × 0.918 × 24.4 × 1000 ≈ **4.7 kW** in high mode.
 @dataclass
 class CopBucket:
     t: float                    # hour start
-    minutes: float; heat_kwh: float; elec_kwh: float
+    minutes: float; heat_per_flow_kwh: float; elec_kwh: float   # heat = heat_per_flow · flow
     power_w: float; outdoor: float | None
 class FlowAccumulator:          # fed with state changes, yields hourly buckets
     def update(self, t, *, power=None, t_in=None, t_out=None, energy=None) -> None
