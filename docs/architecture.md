@@ -29,7 +29,10 @@ flowchart LR
             PLAN[planner.py]
             TUNE[tuning.py]
             COP[cop.py]
+            SAFE[safety.py]
+            SETP[setpoint.py]
         end
+        CTL[HeatPumpController<br/>control.py]
     end
     S1 & S2 & S3 --> SAMP
     REC --> HIST
@@ -46,6 +49,10 @@ flowchart LR
     STORE --> TUNE
     LEARN --> COP
     MODEL --> COP
+    PLAN --> SAFE
+    SAFE --> CTL
+    SETP --> CTL
+    CTL --> HP[heat pump climate entity]
 ```
 
 The integration is split in two layers:
@@ -73,6 +80,8 @@ The integration is split in two layers:
 | Interface segregation | small protocols (`Fitter.fit`, `HistorySource.series`, `Planner.make_plan`, `AttributeParser.parse`) | implementations need only what they use |
 | **Strategy** + **Chain of responsibility** | `AttributeParser` implementations (`DictListParser`, `PlainListParser`) tried in turn by `parse_intervals` | a new price format is a new parser; the planner never sees attribute formats |
 | Open/closed + **Strategy** | `Planner` protocol, `DynamicProgrammingPlanner` | another optimiser can replace it without touching callers (the tuning takes any `Planner`) |
+| **Strategy** | `SetpointStrategy` protocol, `OffsetSetpoint` | another heat pump can be controlled differently without touching the controller |
+| Single responsibility | `SafetyGuard` decides, `OffsetSetpoint` translates, `HeatPumpController` sends and watches | decisions are tested without Home Assistant |
 | Separation of cost and optimisation | `EnergyCosts` computes € per quarter and mode (solar surplus, feed-in, surcharge); the planner only minimises | solar, feed-in and surcharge change no planner code |
 
 ## 3. Thermal model and learning (#2)
@@ -521,4 +530,105 @@ stateDiagram-v2
     Settling --> Idle: power below run threshold
     Counting --> Idle: power below run threshold
     Counting --> Counting: update (integrate heat and electricity)
+```
+
+## 6. Control and safety (#4)
+
+Design: [`design/2026-11-17-control-and-safety.md`](design/2026-11-17-control-and-safety.md).
+
+### 6.1 Classes
+
+```mermaid
+classDiagram
+    direction LR
+    class SafetyGuard {
+        +SafetySettings settings
+        -set _active
+        +decide(plan_mode, pond, pond_age, target, band, allow_high, previous) Decision
+    }
+    class SafetySettings {
+        +float far_below
+        +float hysteresis
+        +float stale_after
+    }
+    class Decision {
+        +str mode
+        +str reason
+    }
+    class SetpointStrategy {
+        <<interface>>
+        +setpoint(mode, inlet, pond, min_temp, max_temp, step) float
+    }
+    class OffsetSetpoint {
+        +dict offsets
+        +setpoint(mode, inlet, pond, min_temp, max_temp, step) float
+    }
+    class MismatchTracker {
+        +float grace
+        +float repair_after
+        +applied(mode, now)
+        +observe(measured, now) tuple
+    }
+    class HeatPumpController {
+        +str climate_entity
+        +setpoint_for(decision, inlet, pond) Optional~float~
+        +async_apply(decision, inlet, pond, control, now) ApplyResult
+        +check_following(measured_mode, now) bool
+    }
+    class ApplyResult {
+        +Optional~float~ setpoint
+        +bool sent
+        +str reason
+    }
+    SafetyGuard o-- SafetySettings
+    SafetyGuard ..> Decision : returns
+    SetpointStrategy <|.. OffsetSetpoint
+    HeatPumpController o-- SetpointStrategy
+    HeatPumpController o-- MismatchTracker
+    HeatPumpController ..> ApplyResult : returns
+    HeatPumpController ..> Decision : applies
+```
+
+### 6.2 Safety rules
+
+```mermaid
+stateDiagram-v2
+    [*] --> Plan
+    Plan --> BelowBand: pond < target − band
+    BelowBand --> FarBelow: pond < target − band − 0.3
+    FarBelow --> BelowBand: pond ≥ target − band − 0.25
+    BelowBand --> Plan: pond ≥ target − band + 0.05
+    Plan --> AboveBand: pond > target + band
+    AboveBand --> Plan: pond ≤ target + band − 0.05
+    Plan --> NoData: pond unknown > 30 min
+    NoData --> Plan: pond known
+    Plan --> NoPlan: no valid plan
+    NoPlan --> Plan: plan available
+```
+
+### 6.3 Applying a decision
+
+```mermaid
+sequenceDiagram
+    participant Co as coordinator (#5)
+    participant Guard as SafetyGuard
+    participant Ctl as HeatPumpController
+    participant SP as OffsetSetpoint
+    participant HP as climate entity
+    participant IR as issue registry
+    Co->>Guard: decide(plan mode, pond, ...)
+    Guard-->>Co: Decision
+    Co->>Ctl: async_apply(decision, inlet, pond, control, now)
+    Ctl->>SP: setpoint(mode, inlet, pond, min, max, step)
+    SP-->>Ctl: setpoint
+    alt dry run, HVAC off or unavailable
+        Ctl-->>Co: ApplyResult(setpoint, sent=false, reason)
+    else setpoint differs
+        Ctl->>HP: climate.set_temperature
+        Ctl-->>Co: ApplyResult(setpoint, sent=true)
+    end
+    Co->>Ctl: check_following(measured mode, now)
+    opt no follow for 2 h
+        Ctl->>IR: create repair issue
+    end
 ```
