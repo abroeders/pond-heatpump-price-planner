@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The target temperature is now a thermostat (climate entity) with the pond temperature and whether the
+  heat pump is heating, usable in the thermostat card and by voice assistants. Range 5–28 °C. The target
+  number entity is removed automatically; the stored target is kept (#12).
+
 ## [0.1.0] - 2026-11-17
 
 ### Added

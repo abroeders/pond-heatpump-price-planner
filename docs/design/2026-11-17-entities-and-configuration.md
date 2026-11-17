@@ -229,3 +229,5 @@ per entry, energy dashboard integration.
   options, reconfigure, setup with entities, dry run against control, settings and migration.
   - In CI on Python 3.13 with the latest Home Assistant.
   - Locally verified on 2025.1.4 and 2026.2.3.
+- **Target temperature:** replaced by a thermostat climate entity in #12 (5–28 °C); see
+  [the climate design](2026-11-17-climate-target.md).
