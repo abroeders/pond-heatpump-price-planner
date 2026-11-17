@@ -58,7 +58,8 @@
   <!-- heat exchanger (condenser): the refrigerant coil gives its heat to the water flowing through -->
   <rect class="hx" x="252" y="196" width="136" height="48" rx="8"/>
   <polyline class="coil" points="366,206 350,230 334,206 318,230 302,206 286,230 274,206"/>
-  <text x="320" y="258" class="label" text-anchor="middle">heat exchanger · thermal</text>
+  <text x="320" y="190" class="label" text-anchor="middle">heat exchanger</text>
+  <text x="320" y="258" class="label" text-anchor="middle">thermal</text>
   <text x="320" y="274" class="small" text-anchor="middle">2.85 kW</text>
 
   <!-- refrigerant circuit: compressor -> hot gas -> condenser -> liquid -> expansion valve -> evaporator -> suction gas -> compressor -->
@@ -73,7 +74,8 @@
     <polygon points="9,-7 9,7 0,0" fill="#fb8c00"/>
   </g>
   <!-- refrigerant temperatures -->
-  <text x="414" y="190" class="small" fill="#c62828" text-anchor="end">gas 52 °C</text>
+  <text x="424" y="150" class="label" fill="#c62828">gas</text>
+  <text x="424" y="166" font-size="12" font-weight="600" fill="#c62828">52 °C</text>
   <text x="246" y="208" class="label" fill="#e65100" text-anchor="end">liquid</text>
   <text x="246" y="223" class="small" fill="#e65100" text-anchor="end">17 °C</text>
 
