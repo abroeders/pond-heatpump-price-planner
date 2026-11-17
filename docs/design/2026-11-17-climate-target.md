@@ -1,7 +1,7 @@
 # Climate entity for the target temperature
 
 - Issue: #12
-- Status: **draft**
+- Status: **approved** (2026-11-17)
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -11,13 +11,14 @@ thermostat: in the thermostat card, by voice assistants and through HomeKit.
 
 ## 2. Entity
 
-`climate.<name>_pond` (translation key `pond`), on the planner device.
+`climate.<name>_thermostat` (translation key `thermostat`, name "Thermostat" / "Thermostaat"), on the planner
+device. A stored target above 28 °C (possible with the old number) is shown and planned as 28 °C.
 
 | Property | Value |
 |---|---|
 | `current_temperature` | measured pond temperature (the linked pond sensor) |
 | `target_temperature` | the stored target (`settings.target`) |
-| `min_temp` / `max_temp` / `target_temperature_step` | 5 / 32 / 0.1 °C |
+| `min_temp` / `max_temp` / `target_temperature_step` | 5 / 28 / 0.1 °C |
 | `temperature_unit` | °C |
 | `hvac_modes` | `[heat]` |
 | `hvac_mode` | `heat` |
