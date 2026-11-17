@@ -74,7 +74,7 @@
   <!-- evaporator: finned coil the air flows through, in front of the fan -->
   <rect x="188" y="82" width="16" height="92" rx="3" fill="#ede7f6" stroke="#7e57c2" stroke-width="2"/>
   <path d="M188 94 H204 M188 106 H204 M188 118 H204 M188 130 H204 M188 142 H204 M188 154 H204 M188 166 H204" stroke="#b39ddb" stroke-width="1.5"/>
-  <text x="196" y="246" class="label" text-anchor="middle">evap.</text>
+  <text transform="translate(215 128) rotate(-90)" font-size="10" fill="#6b6b6b" text-anchor="middle">evaporator</text>
 
   <!-- fan -->
   <circle cx="262" cy="128" r="42" fill="#ffffff" stroke="#90a4ae" stroke-width="2"/>
