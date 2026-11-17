@@ -23,8 +23,8 @@
     .pump-running .pumptri { fill: #43a047; }
     .badge { fill: #1e88e5; }
     .cord { fill: none; stroke: #424242; stroke-width: 3; stroke-linecap: round; }
-    .wave { animation: wave 8s linear infinite; }
-    .wave2 { animation: wave 12s linear infinite reverse; }
+    .wave { animation: wave 8s linear infinite reverse; }
+    .wave2 { animation: wave 12s linear infinite; }
     @keyframes wave { from { transform: translateX(0); } to { transform: translateX(80px); } }  /* one full wave (crest + trough) */
     @keyframes flow { to { stroke-dashoffset: -48; } }
     @keyframes spin { to { transform: rotate(360deg); } }
