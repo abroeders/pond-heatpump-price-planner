@@ -92,7 +92,15 @@ An inline SVG of the installation as a simple process diagram:
 - a supply pipe from the pond through a **circulation pump** to the heat pump's water inlet;
 - the air-to-water heat pump: housing, fan, compressor and **heat exchanger** (condenser): the water from the
   inlet flows through the heat exchanger, where the refrigerant coil heats it, and leaves through the outlet;
-- a return pipe from the heat pump's water outlet back to the pond.
+- a return pipe from the heat pump's water outlet back to the pond;
+- the **refrigerant circuit** inside the heat pump:
+  1. the compressor sends hot gas to the heat exchanger (condenser);
+  2. there the gas condenses and gives its heat to the water;
+  3. the liquid passes the expansion valve (symbol: two triangles tip to tip) to the evaporator in front of
+     the fan, where it takes heat from the air;
+  4. as suction gas it returns to the compressor.
+
+  Colours: hot gas red, liquid orange, suction gas purple, with a small legend.
 
 ```
         air in ──►  ┌──────────────────────┐  ──► air out
@@ -117,7 +125,7 @@ An inline SVG of the installation as a simple process diagram:
 |---|---|---|
 | Pond | water temperature in the tub | the planner's thermostat (`current_temperature`) |
 | Water in / water out | value at the supply and return pipes, below the housing | `water_in`, `water_out` (temperature) |
-| Heat exchanger | temperature below the heat exchanger; the coil glows while the compressor runs | `heat_exchanger` (temperature, e.g. the condenser temperature) |
+| Heat exchanger | temperature below the heat exchanger | `heat_exchanger` (temperature, e.g. the condenser temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
 | Electrical and thermal power | both on the housing, one under the other | `power`, the planner's `thermal_power` |
 | Mode | label (off/low/high) on the housing | the planner's `mode` |
@@ -125,12 +133,15 @@ An inline SVG of the installation as a simple process diagram:
 | **Water flow animation** | dashes move along the supply and return pipes in the flow direction while the entity is on | `flow` (boolean, e.g. "circulation active") |
 | **Pump state** | the pump symbol is **green** while running (`flow` on), **red** on a fault (`pump_fault` on, takes precedence), **grey** when off; the state is also written under the pump (running / fault / off) | `flow`, `pump_fault` (boolean) |
 | Pump speed | value under the pump in rpm (the unit of the sensor is shown as is) | `pump_speed` (sensor, rpm) |
-| Compressor | glows while the entity is on | `compressor` (boolean) |
+| **Compressor animation** | the piston pumps up and down while the entity is on | `compressor` (boolean) |
+| **Refrigerant flow animation** | dashes move along the hot gas, liquid and suction lines while the compressor runs | `compressor` (boolean) |
+| Hot gas temperature | value at the hot gas line | `gas` (temperature, e.g. the gas outlet temperature) |
 
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
 others are left for the user. On the reference installation:
 - `air_out`: `sensor.w_eau_heatpump_air_outlet_temperature`;
 - `heat_exchanger`: `sensor.w_eau_heatpump_condensor_temperature`;
+- `gas`: `sensor.w_eau_heatpump_gas_out_temperature`;
 - `fan`: `binary_sensor.w_eau_heatpump_fan_active`;
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
 - `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`;
@@ -138,7 +149,8 @@ others are left for the user. On the reference installation:
 - `pump_fault`: a fault sensor of that pump, if there is one.
 
 **Animations.**
-- They are CSS animations: a rotating fan group, `stroke-dashoffset` along the pipe paths, a pulsing glow.
+- They are CSS animations: a rotating fan group, `stroke-dashoffset` along the water and refrigerant lines,
+  and a piston that moves up and down in the compressor.
   They run only while the boolean entity is `on`.
 - An entity that is off, unavailable or not configured gives a still drawing.
 - `prefers-reduced-motion: reduce` stops all animations; the on/off state then shows as a colour and a
@@ -280,6 +292,7 @@ heat_pump:                           # all optional; prefilled from the planner
   air_in: sensor.w_eau_heatpump_air_inlet_temperature
   air_out: sensor.w_eau_heatpump_air_outlet_temperature
   heat_exchanger: sensor.w_eau_heatpump_condensor_temperature
+  gas: sensor.w_eau_heatpump_gas_out_temperature
   power: sensor.warmtepomp_vijver_power
   fan: binary_sensor.w_eau_heatpump_fan_active
   flow: binary_sensor.w_eau_heatpump_circulation_active
