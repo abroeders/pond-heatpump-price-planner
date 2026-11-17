@@ -28,6 +28,7 @@ flowchart LR
             COSTS[costs.py]
             PLAN[planner.py]
             TUNE[tuning.py]
+            COP[cop.py]
         end
     end
     S1 & S2 & S3 --> SAMP
@@ -43,6 +44,8 @@ flowchart LR
     MODEL --> PLAN
     PLAN --> TUNE
     STORE --> TUNE
+    LEARN --> COP
+    MODEL --> COP
 ```
 
 The integration is split in two layers:
@@ -428,4 +431,94 @@ sequenceDiagram
         Tune->>Tune: reject if the pond left the band
     end
     Tune-->>Timer: TuningResult (lowest real cost, ties: smallest)
+```
+
+## 5. COP, heat loss and thermal power (#8)
+
+Formulas: [`cop.md`](cop.md).
+
+### 5.1 Classes
+
+```mermaid
+classDiagram
+    direction TB
+    class FlowAccumulator {
+        +float run_threshold_w
+        +float settle_s
+        +update(t, power, t_in, t_out, outdoor, energy)
+        +close_hour(t) Optional~CopBucket~
+    }
+    class CopBucket {
+        +float t
+        +float seconds
+        +float heat_per_flow_kwh
+        +float elec_kwh
+        +power_w Optional~float~
+        +outdoor Optional~float~
+        +hours float
+        +to_list() list
+        +from_list(row)$ CopBucket
+    }
+    class LossFit {
+        +float a_kw
+        +float b_kw_per_k
+        +int hours
+        +loss_kw(delta) float
+    }
+    class CopResult {
+        +Optional~float~ cop
+        +float hours
+        +dict by_outdoor
+        +dict by_power
+        +dict hours_by_outdoor
+        +dict hours_by_power
+    }
+    class Hour {
+        <<from learning.py>>
+    }
+    class ModelParams {
+        <<from model.py>>
+    }
+    FlowAccumulator ..> CopBucket : creates per hour
+    CopBucket ..> CopResult : cop_flow
+    Hour ..> LossFit : fit_loss
+    Hour ..> CopResult : cop_pond
+    LossFit ..> CopResult : cop_pond
+    CopResult ..> CopResult : combine(method)
+    ModelParams ..> CopResult : model_check
+```
+
+Module functions: `capacity_kwh_per_k`, `heat_loss_w_per_k`, `thermal_power_w` (from `ModelParams`),
+`cop_flow`, `fit_loss`, `cop_pond`, `combine` (flow, pond or average), `model_check`.
+
+### 5.2 Flow method: from state changes to COP
+
+```mermaid
+sequenceDiagram
+    participant HA as state listeners (#5)
+    participant Acc as FlowAccumulator
+    participant Store as PlannerStore
+    participant Calc as cop_flow / cop_pond / combine
+    HA->>Acc: update(t, power / t_in / t_out / outdoor / energy)
+    Acc->>Acc: integrate the previous state up to t (step function)
+    Acc->>Acc: count only if running and settled, split counter increases
+    HA->>Acc: close_hour(t) at every full hour
+    Acc-->>HA: CopBucket of the past hour
+    HA->>Store: keep bucket (42 days)
+    HA->>Calc: cop_flow(buckets, flow, now, window)
+    HA->>Calc: fit_loss(hours, capacity), cop_pond(hours, loss, capacity, now, window)
+    HA->>Calc: combine(method, flow result, pond result)
+    Calc-->>HA: CopResult for the sensors
+```
+
+### 5.3 Counting state of the flow method
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Settling: power above run threshold
+    Settling --> Counting: settle time passed and both water temperatures known
+    Settling --> Idle: power below run threshold
+    Counting --> Idle: power below run threshold
+    Counting --> Counting: update (integrate heat and electricity)
 ```
