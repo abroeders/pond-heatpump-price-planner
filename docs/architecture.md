@@ -835,6 +835,7 @@ classDiagram
         <<modules>>
         +illustration(model, t)
         +planChart(plan, t, language)
+        +planLegend(plan, t)
         +figures / switches / modelSection / nextLine
     }
     class localize {
