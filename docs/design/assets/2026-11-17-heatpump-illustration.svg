@@ -62,8 +62,10 @@
   <!-- mode badge and power -->
   <rect class="badge" x="398" y="52" width="54" height="22" rx="11"/>
   <text x="425" y="68" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">LOW</text>
-  <text x="386" y="104" class="label">power</text>
-  <text x="386" y="122" class="value">386 W</text>
+  <text x="386" y="98" class="label">electrical</text>
+  <text x="386" y="116" class="value">386 W</text>
+  <text x="386" y="140" class="label">thermal</text>
+  <text x="386" y="158" class="value">2.85 kW</text>
 
   <!-- heat exchanger (condenser): refrigerant coil heats the water that flows through it -->
   <rect class="hx" x="252" y="190" width="136" height="54" rx="8"/>
@@ -86,8 +88,6 @@
   <text x="242" y="318" class="value">14.0 °C</text>
   <text x="398" y="300" class="label" text-anchor="end">water out</text>
   <text x="398" y="318" class="value" text-anchor="end">16.0 °C</text>
-  <text x="554" y="322" class="label">thermal</text>
-  <text x="554" y="340" class="value">2.85 kW</text>
 
   <!-- circulation pump: centrifugal pump symbol (circle, triangle pointing in the flow direction) -->
   <g class="pump-running" transform="translate(160 312)">
