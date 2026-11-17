@@ -52,7 +52,8 @@ The settings are stored by the integration and survive a restart.
 `unavailable`, `error`.
 
 **`plan`**: one entry per quarter with `start`, `mode`, `temp` (predicted pond temperature at the end of the
-quarter) and `price` (effective €/kWh). It is not stored in the recorder.
+quarter), `price` (effective €/kWh), `known` (false where the price comes from the price forecast) and, with
+solar configured, `surplus` (kW). It is not stored in the recorder.
 
 **`price_status`**:
 
@@ -87,7 +88,7 @@ link.
 | `heating_rate_low` | K/h | how fast low power warms the pond | `gain`, `power_kw` |
 | `heating_rate_high` | K/h | the same for high power | `gain`, `power_kw` |
 | `prediction_error` | K | mean absolute error of the 4-hour prediction over the last 24 h | `checked` |
-| `model_status` | timestamp | when the model was last learned | `reports`, `model_check`, `samples` |
+| `model_status` | timestamp | when the model was last learned | `reports`, `model_check`, `samples`, `links` (the linked entities; the card uses them as defaults) |
 | `surcharge` | €/kWh | the surcharge on expensive quarters in use | `auto`, `costs` per candidate, `days`, `reason`, `at` |
 
 *Download diagnostics* on the device page gives the links, options, settings, model, last reports and a
