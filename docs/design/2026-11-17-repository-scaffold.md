@@ -16,7 +16,7 @@ first commit onward. No planning or control logic is part of this issue.
 - Home Assistant ships `numpy`; the integration needs no extra Python requirements.
 - Home Assistant requires Python 3.13 or newer. The computational core (model, learning, planner) is
   plain Python + numpy without Home Assistant imports, so it can be tested on any recent Python.
-- Minimum Home Assistant version: **2024.8** (`ConfigEntry.runtime_data`, `weather.get_forecasts`).
+- Minimum Home Assistant version: **2026.3** (own brand images; decided 2026-11-17, was 2024.8).
 
 ## 3. Layout
 
@@ -78,7 +78,7 @@ service of its own.
 ### 4.2 `hacs.json`
 
 ```json
-{ "name": "Pond Heat Pump Price Planner", "homeassistant": "2024.8.0", "render_readme": true }
+{ "name": "Pond Heat Pump Price Planner", "homeassistant": "2026.3.0", "render_readme": true }
 ```
 
 ### 4.3 Minimal integration
@@ -113,8 +113,7 @@ The integration gets its own icon: a pond with a koi that sticks its head above 
 
 - **Where it shows.** Since Home Assistant 2026.3, a custom integration can ship its own brand images in
   `custom_components/<domain>/brand/`; they are served at `/api/brands/integration/<domain>/<image>` and
-  take precedence over the brands repository. No PR to `home-assistant/brands` is needed. On older
-  versions Home Assistant shows its generic placeholder; the minimum version stays 2024.8.
+  take precedence over the brands repository. No PR to `home-assistant/brands` is needed. 
 - **Files:**
   - `icon.png` (256 × 256) and `icon@2x.png` (512 × 512);
   - `dark_icon.png` and `dark_icon@2x.png`, with a lighter rim and ripples for dark themes;

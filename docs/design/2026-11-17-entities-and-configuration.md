@@ -1,7 +1,7 @@
 # Entities, configuration and translations
 
 - Issue: #5
-- Status: **approved** (2026-11-17)
+- Status: **approved** (2026-11-17); revised during implementation, see §8
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -213,3 +213,19 @@ repair issue and errors. `translations/en.json` and `translations/nl.json`.
 
 A custom Lovelace card (an ApexCharts example comes with the documentation, #6), more than one heat pump
 per entry, energy dashboard integration.
+
+## 8. Revisions during implementation (2026-11-17)
+
+- **Minimum Home Assistant 2026.3** (decided by the user). This allows `TEMPERATURE_DELTA` for the
+  prediction error and the integration's own brand images. `hacs.json` says `2026.3.0`.
+- **Config entry version 2.** Entries of the empty scaffold (version 1, only a name) cannot be migrated: the
+  migration fails with a log message, and the user removes the entry and adds the integration again.
+- **Settings are stored in the planner's own store** (`PlannerStore.settings`), not restored from entity
+  states. Number, switch and select entities read and write them through the coordinator.
+- **Small price additions use `step: any`** in the options form: the number selector does not accept steps
+  below 0.001.
+- **A failed start stops the coordinator** again, so no timers or listeners outlive a failed setup.
+- **HA tests:** `tests_ha/` runs with `pytest-homeassistant-custom-component`. It covers the config flow,
+  options, reconfigure, setup with entities, dry run against control, settings and migration.
+  - In CI on Python 3.13 with the latest Home Assistant.
+  - Locally verified on 2025.1.4 and 2026.2.3.

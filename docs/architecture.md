@@ -75,7 +75,10 @@ The integration is split in two layers:
 | Open/closed + **Strategy** | `Fitter` protocol with `SlowFit`, `CoolingFit` | a new fit (e.g. solar gain) is a new class, existing fits stay untouched |
 | **Facade** | `Learner` runs the fits in order | the rest of the integration calls one method |
 | Dependency inversion + **Adapter** | `seeding.seed()` depends on the `HistorySource` protocol; `RecorderHistory` adapts the recorder | the core never imports Home Assistant and is tested with a fake source |
-| **Repository** | `PlannerStore` | one place that loads and saves samples and parameters |
+| **Repository** | `PlannerStore` | one place that loads and saves samples, COP buckets, parameters and settings |
+| **Observer** | `PlannerCoordinator` (DataUpdateCoordinator) with `PlannerEntity` subclasses | entities only read state; all logic lives in the coordinator and the core |
+| **Adapter** | `InputReader` turns states and attributes of linked entities into core inputs | the core never sees Home Assistant states |
+| Entity descriptions (HA idiom, close to **Strategy**) | `PlannerSensorDescription` with `value_fn` / `attrs_fn`, `SettingNumberDescription`, `SettingSwitchDescription` | a new sensor is a new description, not a new class |
 | Liskov / immutability | fits return new `ModelParams` (via `copy()`), never mutate their input | fits can be chained and compared safely |
 | Interface segregation | small protocols (`Fitter.fit`, `HistorySource.series`, `Planner.make_plan`, `AttributeParser.parse`) | implementations need only what they use |
 | **Strategy** + **Chain of responsibility** | `AttributeParser` implementations (`DictListParser`, `PlainListParser`) tried in turn by `parse_intervals` | a new price format is a new parser; the planner never sees attribute formats |
@@ -631,4 +634,140 @@ sequenceDiagram
     opt no follow for 2 h
         Ctl->>IR: create repair issue
     end
+```
+
+## 7. Home Assistant layer (#5)
+
+Design: [`design/2026-11-17-entities-and-configuration.md`](design/2026-11-17-entities-and-configuration.md).
+
+### 7.1 Components
+
+```mermaid
+classDiagram
+    direction LR
+    class PlannerCoordinator {
+        +PlannerStore store
+        +InputReader inputs
+        +DynamicProgrammingPlanner planner
+        +Learner learner
+        +SafetyGuard guard
+        +HeatPumpController controller
+        +PowerIntegrator power
+        +FlowAccumulator flow
+        +PredictionTracker tracker
+        +PlannerData data
+        +async_start()
+        +async_stop()
+        +async_replan()
+        +async_learn()
+        +async_set_setting(key, value)
+    }
+    class PlannerData {
+        +Plan plan
+        +Decision decision
+        +ApplyResult applied
+        +CopResult cop
+        +float heat_loss_w_per_k
+        +float thermal_power_w
+        +float prediction_error
+    }
+    class InputReader {
+        +pond() float
+        +outdoor() float
+        +inlet() float
+        +power_w() float
+        +prices(start) PriceSeries
+        +price_now(t) float
+        +async_outdoor_forecast(now) OutdoorForecast
+        +surplus(start, n, heat_pump_w) list
+    }
+    class PlannerEntity {
+        <<CoordinatorEntity>>
+        +unique_id
+        +translation_key
+        +device_info
+    }
+    class PlannerSensor
+    class SettingNumber
+    class SettingSwitch
+    class CopMethodSelect
+    class RelearnButton
+    PlannerCoordinator o-- PlannerData
+    PlannerCoordinator o-- InputReader
+    PlannerCoordinator o-- PlannerStore
+    PlannerCoordinator o-- HeatPumpController
+    PlannerEntity <|-- PlannerSensor
+    PlannerEntity <|-- SettingNumber
+    PlannerEntity <|-- SettingSwitch
+    PlannerEntity <|-- CopMethodSelect
+    PlannerEntity <|-- RelearnButton
+    PlannerEntity --> PlannerCoordinator : observes
+```
+
+### 7.2 Setup
+
+```mermaid
+sequenceDiagram
+    participant HA as Home Assistant
+    participant Init as async_setup_entry
+    participant Co as PlannerCoordinator
+    participant Store as PlannerStore
+    participant Ent as platforms
+    HA->>Init: config entry
+    Init->>Co: PlannerCoordinator(hass, entry)
+    Init->>Co: async_start()
+    Co->>Store: async_load()
+    Co->>Co: seed from the recorder if needed
+    Co->>Co: state listeners and timers (quarter, hour, 03:30)
+    Co->>Co: COP, first plan
+    alt start fails
+        Init->>Co: async_stop() (no lingering timers)
+    end
+    Init->>Ent: forward setup: sensor, number, switch, select, button
+    Ent->>Co: observe
+```
+
+### 7.3 Quarter cycle
+
+```mermaid
+sequenceDiagram
+    participant T as timer :00/:15/:30/:45 +5 s
+    participant Co as PlannerCoordinator
+    participant In as InputReader
+    participant St as PlannerStore
+    participant P as Planner (executor)
+    participant G as SafetyGuard
+    participant C as HeatPumpController
+    participant E as entities
+    T->>Co: _on_quarter
+    Co->>St: add(sample of the past quarter, with price)
+    Co->>Co: tracker.observe(pond)
+    Co->>In: prices, outdoor forecast, surplus
+    Co->>P: make_plan(PlanRequest)
+    P-->>Co: Plan
+    Co->>G: decide
+    G-->>Co: Decision
+    Co->>C: async_apply (dry run when control is off)
+    Co->>Co: check_following, predict +4 h
+    Co->>E: async_set_updated_data
+```
+
+### 7.4 Settings changed by the user
+
+```mermaid
+sequenceDiagram
+    participant U as user
+    participant N as number / switch / select
+    participant Co as PlannerCoordinator
+    participant St as PlannerStore
+    U->>N: set value
+    N->>Co: async_set_setting(key, value)
+    Co->>St: set_setting (saved after 60 s)
+    alt target, band, cover or control
+        Co->>Co: schedule_replan (2 s debounce)
+    end
+    alt volume, flow, COP method or cover
+        Co->>Co: recalculate COP, heat loss, thermal power
+    end
+    Co->>N: async_set_updated_data
 ```
