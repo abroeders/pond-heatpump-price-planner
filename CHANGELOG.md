@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-17
+
 ### Added
 
 - Thermal model of the pond, learned every night from quarter-hour samples (42 days), seeded from the
@@ -24,3 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Requirements
 
 - Home Assistant 2026.3 or later.
+
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/abroeders/pond-heatpump-price-planner/releases/tag/v0.1.0
