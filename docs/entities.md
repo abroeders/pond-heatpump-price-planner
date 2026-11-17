@@ -3,11 +3,19 @@
 All entities belong to one device per planner. Entity IDs are derived from the device name, e.g.
 `sensor.pond_mode` for a planner named "Pond". The keys below are the stable part of the unique ID.
 
+## Thermostat
+
+| Key | Type | Meaning |
+|---|---|---|
+| `thermostat` | climate | the pond as a thermostat: current temperature = pond temperature, target temperature (5–28 °C, step 0.1), HVAC action *heating* when the applied mode is low or high and *idle* when off. Only the HVAC mode *heat* exists; whether the planner controls the heat pump is the `control` switch. Attributes: `mode`, `reason`, `band`, `control`. |
+
+Set the target with the thermostat card, the more-info dialog, `climate.set_temperature` or a voice assistant.
+Until version 0.1.0 the target was a number entity; it is removed automatically.
+
 ## Settings
 
 | Key | Type | Unit / options | Meaning |
 |---|---|---|---|
-| `target` | number | °C, 5–32, step 0.1 | target pond temperature |
 | `band` | number | K, 0.1–1.0, step 0.05 | the pond may move this far above and below the target |
 | `pond_volume` | number | m³, 1–500, step 0.25 | water volume; needed for the pond COP, heat loss and thermal power |
 | `flow` | number | m³/h, 0.5–20, step 0.25 | flow through the heat pump; needed for the flow COP |

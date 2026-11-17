@@ -39,7 +39,7 @@ at high power, with 1–2 starts a day and the pond within ±0.25 K.
 2. **Install.** Download *Pond Heat Pump Price Planner* and restart Home Assistant.
 3. **Add the integration.** *Settings → Devices & services → Add integration → Pond Heat Pump Price
    Planner*, then link your sensors.
-4. **First settings.** Set the target temperature, band, pond volume and flow on the device page. Set the
+4. **First settings.** Set the target on the thermostat, and the band, pond volume and flow on the device page. Set the
    price options if your price sensor shows a bare exchange price.
 5. **Dry run first.** Watch the plan for a week, then turn on *Control the heat pump*.
 
