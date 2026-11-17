@@ -14,7 +14,7 @@ keeps the pond within a narrow temperature band, preheats before expensive perio
 2. Install *Pond Heat Pump Price Planner* and restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Pond Heat Pump Price Planner*.
 
-Requires Home Assistant 2024.8 or later; the integration icon shows from 2026.3.
+Requires Home Assistant 2026.3 or later.
 
 ## License
 
