@@ -1,7 +1,7 @@
 # Repository scaffold
 
 - Issue: #1
-- Status: **approved** (2026-11-17)
+- Status: **approved** (2026-11-17); §10 added 2026-11-17, **draft**
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -107,12 +107,38 @@ checks once they exist (a later change on GitHub, after OK).
 
 Bug report (version, HA version, what happened, diagnostics download) and feature request (problem, proposal).
 
-## 8. Out of scope
+## 8. Brand images
+
+The integration gets its own icon: a pond with a koi that sticks its head above the water.
+
+- **Where it shows.** Since Home Assistant 2026.3, a custom integration can ship its own brand images in
+  `custom_components/<domain>/brand/`; they are served at `/api/brands/integration/<domain>/<image>` and
+  take precedence over the brands repository. No PR to `home-assistant/brands` is needed. On older
+  versions Home Assistant shows its generic placeholder; the minimum version stays 2024.8.
+- **Files:**
+  - `icon.png` (256 × 256) and `icon@2x.png` (512 × 512);
+  - `dark_icon.png` and `dark_icon@2x.png`, with a lighter rim and ripples for dark themes;
+  - no `logo.png`: Home Assistant falls back to the icon.
+- **Source and format.**
+  - Source: `brand/icon.svg` in the repository (not used by Home Assistant). The PNGs are generated from it
+    with a small script (`scripts/render_icons.py`, resvg).
+  - Transparent background, square, trimmed to the content.
+- **Style:** flat with soft gradients, readable at 48 px.
+  - Grey stone rim, blue water with white ripples, an orange-and-white koi with an open mouth, two water
+    droplets.
+  - No text and no Home Assistant marks.
+
+Draft: [`assets/2026-11-17-icon-draft.svg`](assets/2026-11-17-icon-draft.svg)
+
+![icon draft](assets/2026-11-17-icon-draft.png)
+
+## 9. Out of scope
 
 Any planning, learning or control logic; documentation content beyond the README stub (#6).
 
-## 9. Acceptance
+## 10. Acceptance
 
 - CI green on the feature branch.
+- The icon shows on *Settings → Devices & services* on Home Assistant 2026.3 or later.
 - Adding the repository as a HACS custom repository on a test or real installation shows the integration and
   the config flow creates an entry without errors (checked by the user).

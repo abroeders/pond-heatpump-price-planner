@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 44 488 488" width="512" height="512">
+  <defs>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4FB3E8"/>
+      <stop offset="1" stop-color="#1A5F96"/>
+    </linearGradient>
+    <linearGradient id="koi" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8590C"/>
+      <stop offset="0.5" stop-color="#FF8A1E"/>
+      <stop offset="1" stop-color="#E8590C"/>
+    </linearGradient>
+    <clipPath id="above"><path d="M0 0 H512 V330 C 420 318, 330 322, 256 326 C 182 322, 92 318, 0 330 Z"/></clipPath>
+    <clipPath id="body"><ellipse cx="256" cy="262" rx="70" ry="128"/></clipPath>
+  </defs>
+  <!-- stones around the pond -->
+  <ellipse cx="256" cy="352" rx="236" ry="124" fill="#8A9199"/>
+  <ellipse cx="256" cy="346" rx="236" ry="118" fill="#AEB5BC"/>
+  <!-- water -->
+  <ellipse cx="256" cy="350" rx="212" ry="102" fill="url(#water)"/>
+  <!-- koi head, above the waterline only -->
+  <g clip-path="url(#above)">
+    <ellipse cx="256" cy="262" rx="70" ry="128" fill="url(#koi)"/>
+    <path clip-path="url(#body)" d="M180 290 C 205 248, 238 244, 256 266 C 274 244, 307 248, 332 290 L 332 400 L 180 400 Z" fill="#FFFFFF" opacity="0.95"/>
+    <path d="M226 170 C 240 150, 272 150, 286 170 C 276 196, 236 196, 226 170 Z" fill="#FFFFFF" opacity="0.9"/>
+    <ellipse cx="256" cy="150" rx="24" ry="15" fill="#5A1A0A"/>
+    <ellipse cx="256" cy="147" rx="16" ry="8" fill="#2B0A04"/>
+    <circle cx="219" cy="214" r="11" fill="#FFFFFF"/>
+    <circle cx="293" cy="214" r="11" fill="#FFFFFF"/>
+    <circle cx="221" cy="216" r="6" fill="#111"/>
+    <circle cx="291" cy="216" r="6" fill="#111"/>
+    <path d="M234 156 C 222 160, 212 168, 206 180" stroke="#B5400A" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M278 156 C 290 160, 300 168, 306 180" stroke="#B5400A" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- ripples -->
+  <ellipse cx="256" cy="328" rx="96" ry="20" fill="none" stroke="#FFFFFF" stroke-width="7" opacity="0.85"/>
+  <ellipse cx="256" cy="334" rx="146" ry="38" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.45"/>
+  <!-- droplets -->
+  <path d="M168 236 c -8 12 -8 20 0 22 c 8 -2 8 -10 0 -22 z" fill="#4FB3E8"/>
+  <path d="M348 210 c -7 10 -7 17 0 19 c 7 -2 7 -9 0 -19 z" fill="#4FB3E8"/>
+</svg>
