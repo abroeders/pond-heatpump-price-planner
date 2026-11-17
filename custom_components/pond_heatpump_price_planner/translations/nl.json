@@ -4,8 +4,16 @@
       "user": {
         "title": "Vijverwarmtepomp",
         "description": "Stel een prijsplanner voor een vijverwarmtepomp in.",
-        "data": { "name": "Naam" }
+        "data": {
+          "name": "Naam"
+        }
       }
+    }
+  },
+  "issues": {
+    "heat_pump_not_following": {
+      "title": "Warmtepomp volgt de planner niet",
+      "description": "{entity} volgt al twee uur niet de stand die de planner instelt. Controleer of de warmtepomp aan staat, of geen andere automatisering het setpoint verandert, en of de setpoint-offsets in de opties bij deze warmtepomp passen."
     }
   }
 }
