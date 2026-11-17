@@ -20,6 +20,8 @@ happens.
 - **Solar surplus**, valued at the feed-in price.
 - **Safety rules** with hysteresis, a dry-run mode, and a repair issue when the heat pump does not follow.
 - **COP** by two independent methods (water flow and the pond itself), plus heat loss and thermal power.
+- **Built-in Lovelace card** with an animated heat pump drawing, a thermostat with the band, the plan and
+  the key figures; no separate download.
 - **Everything in the UI**, in English and Dutch.
 
 On the reference pond (21 m³, November 2026) the planner costs about 25–30 % less than the previous control
@@ -39,7 +41,7 @@ at high power, with 1–2 starts a day and the pond within ±0.25 K.
 2. **Install.** Download *Pond Heat Pump Price Planner* and restart Home Assistant.
 3. **Add the integration.** *Settings → Devices & services → Add integration → Pond Heat Pump Price
    Planner*, then link your sensors.
-4. **First settings.** Set the target temperature, band, pond volume and flow on the device page. Set the
+4. **First settings.** Set the target on the thermostat, and the band, pond volume and flow on the device page. Set the
    price options if your price sensor shows a bare exchange price.
 5. **Dry run first.** Watch the plan for a week, then turn on *Control the heat pump*.
 
@@ -54,7 +56,8 @@ The [installation guide](docs/installation.md) explains every step.
 | [Entities](docs/entities.md) | what every sensor, number, switch and attribute shows |
 | [How it works](docs/how-it-works.md) | model, learning, planning, safety, with formulas |
 | [COP, heat loss and thermal power](docs/cop.md) | both COP methods with formulas |
-| [Dashboard examples](docs/dashboard.md) | entities card, plan chart, history |
+| [Lovelace card](docs/card.md) | the built-in card: animated heat pump, thermostat with band, plan, figures |
+| [Dashboard examples](docs/dashboard.md) | standard cards: thermostat, entities, plan chart, history |
 | [Troubleshooting](docs/troubleshooting.md) | symptoms, causes, fixes |
 | [FAQ](docs/faq.md) | short answers |
 | [Architecture](docs/architecture.md) and [designs](docs/design/) | for contributors |

@@ -59,6 +59,8 @@ from .const import (
     SET_FLOW,
     SET_TARGET,
     SET_VOLUME,
+    TARGET_MAX,
+    TARGET_MIN,
     TUNING_DAYS,
 )
 from .control import ApplyResult, HeatPumpController
@@ -103,6 +105,8 @@ class PlannerData:
     measured_mode: str | None = None
     mismatch: bool = False
     price_status: str = "no_prices"
+    known_quarters: int = 0  # quarters of the plan with a known (not forecast) price
+    surplus: list[float] | None = None  # solar surplus per quarter (kW), when solar is configured
     pond: float | None = None
     cop: CopResult | None = None
     cop_flow: CopResult | None = None
@@ -161,6 +165,11 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
     @property
     def settings(self) -> dict[str, Any]:
         return self.store.settings
+
+    @property
+    def target(self) -> float:
+        """Target temperature, within the limits of the climate entity."""
+        return min(max(float(self.settings[SET_TARGET]), TARGET_MIN), TARGET_MAX)
 
     @property
     def params(self) -> ModelParams:
@@ -285,7 +294,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         async with self._lock:
             now = time.time()
             start = quarter_start(now)
-            target, band = float(self.settings[SET_TARGET]), float(self.settings[SET_BAND])
+            target, band = self.target, float(self.settings[SET_BAND])
             pond = self.inputs.pond()
             power = self.inputs.power_w()
             measured = self.classifier.mode(power)
@@ -353,6 +362,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 mismatch,
             )
             d.price_status, d.pond, d.surcharge = prices.status, pond, self._surcharge()
+            d.known_quarters, d.surplus = prices.known, surplus
             d.prediction_error = self.tracker.mean_abs_error()
             capacity = capacity_kwh_per_k(self.settings[SET_VOLUME])
             d.thermal_power_w = thermal_power_w(self.params, measured or "off", capacity)
@@ -428,7 +438,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                     tune_surcharge,
                     list(self.store.samples),
                     params,
-                    float(self.settings[SET_TARGET]),
+                    self.target,
                     float(self.settings[SET_BAND]),
                     partial(day_ahead_known_until, tz=tz),
                     now,

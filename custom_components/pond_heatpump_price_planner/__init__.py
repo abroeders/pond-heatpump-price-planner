@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 
+from .const import CARD_FILE, CARD_URL, DOMAIN
 from .coordinator import PlannerCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
+    Platform.CLIMATE,
     Platform.SENSOR,
     Platform.NUMBER,
     Platform.SWITCH,
@@ -20,11 +27,34 @@ PLATFORMS: list[Platform] = [
     Platform.BUTTON,
 ]
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 type PlannerConfigEntry = ConfigEntry[PlannerCoordinator]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Serve the Lovelace card and load it on every dashboard (no manual resource needed)."""
+    await async_register_card(hass)
+    return True
+
+
+async def async_register_card(hass: HomeAssistant) -> bool:
+    """Register the card's static path and extra module URL; skipped without http or frontend (tests)."""
+    if getattr(hass, "http", None) is None or "frontend" not in hass.config.components:
+        return False
+    from homeassistant.components.frontend import add_extra_js_url
+    from homeassistant.components.http import StaticPathConfig
+
+    path = Path(__file__).parent / "frontend" / CARD_FILE
+    await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(path), True)])
+    version = (await async_get_integration(hass, DOMAIN)).version
+    add_extra_js_url(hass, f"{CARD_URL}?v={version}")
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> bool:
     """Set up a planner: load its store, start its timers and listeners, add the entities."""
+    _remove_replaced_entities(hass, entry)
     coordinator = PlannerCoordinator(hass, entry)
     try:
         await coordinator.async_start()
@@ -35,6 +65,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> b
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+def _remove_replaced_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """0.2.0: the target temperature number became the thermostat climate entity."""
+    registry = er.async_get(hass)
+    if entity_id := registry.async_get_entity_id(Platform.NUMBER, DOMAIN, f"{entry.entry_id}_target"):
+        registry.async_remove(entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> bool:

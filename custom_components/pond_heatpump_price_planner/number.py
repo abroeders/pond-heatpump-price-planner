@@ -1,4 +1,4 @@
-"""Number entities: target temperature, band, pond volume and flow."""
+"""Number entities: band, pond volume and flow. The target temperature is the climate entity."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfVolume,
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import SET_BAND, SET_FLOW, SET_TARGET, SET_VOLUME
+from .const import SET_BAND, SET_FLOW, SET_VOLUME
 from .coordinator import PlannerCoordinator
 from .entity import PlannerEntity
 
@@ -26,16 +26,6 @@ class SettingNumberDescription(NumberEntityDescription):
 
 
 NUMBERS: tuple[SettingNumberDescription, ...] = (
-    SettingNumberDescription(
-        key="target",
-        setting=SET_TARGET,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        native_min_value=5,
-        native_max_value=32,
-        native_step=0.1,
-        mode=NumberMode.BOX,
-    ),
     SettingNumberDescription(
         key="band",
         setting=SET_BAND,

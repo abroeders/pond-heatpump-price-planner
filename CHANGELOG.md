@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-17
+
+### Added
+
+- Built-in Lovelace card `custom:pond-heatpump-planner-card`: animated heat pump drawing with pond, pump,
+  refrigerant circuit and power cord; thermostat gauge with the band and a band slider; plan chart; key
+  figures; switches; model. Loaded automatically, English and Dutch (#10).
+- The `plan` attribute shows per quarter whether the price is known and the solar surplus; the model status
+  sensor shows the linked entities (#10).
+
+### Changed
+
+- The target temperature is now a thermostat (climate entity) with the pond temperature and whether the
+  heat pump is heating, usable in the thermostat card and by voice assistants. Range 5–28 °C. The target
+  number entity is removed automatically; the stored target is kept (#12).
+
 ## [0.1.0] - 2026-11-17
 
 ### Added
@@ -27,5 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/abroeders/pond-heatpump-price-planner/releases/tag/v0.1.0

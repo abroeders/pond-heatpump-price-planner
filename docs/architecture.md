@@ -78,6 +78,7 @@ The integration is split in two layers:
 | **Repository** | `PlannerStore` | one place that loads and saves samples, COP buckets, parameters and settings |
 | **Observer** | `PlannerCoordinator` (DataUpdateCoordinator) with `PlannerEntity` subclasses | entities only read state; all logic lives in the coordinator and the core |
 | **Adapter** | `InputReader` turns states and attributes of linked entities into core inputs | the core never sees Home Assistant states |
+| Pure view model, presentational sections (card) | `buildViewModel`, `resolvePlanner`, chart and gauge geometry are plain TypeScript; the Lit elements only render | the card logic is unit-tested without a browser; the card has no logic of its own and only calls services |
 | Entity descriptions (HA idiom, close to **Strategy**) | `PlannerSensorDescription` with `value_fn` / `attrs_fn`, `SettingNumberDescription`, `SettingSwitchDescription` | a new sensor is a new description, not a new class |
 | Liskov / immutability | fits return new `ModelParams` (via `copy()`), never mutate their input | fits can be chained and compared safely |
 | Interface segregation | small protocols (`Fitter.fit`, `HistorySource.series`, `Planner.make_plan`, `AttributeParser.parse`) | implementations need only what they use |
@@ -688,6 +689,13 @@ classDiagram
         +device_info
     }
     class PlannerSensor
+    class PondThermostat {
+        <<ClimateEntity>>
+        +current_temperature
+        +target_temperature
+        +hvac_action
+        +async_set_temperature(temperature)
+    }
     class SettingNumber
     class SettingSwitch
     class CopMethodSelect
@@ -697,6 +705,7 @@ classDiagram
     PlannerCoordinator o-- PlannerStore
     PlannerCoordinator o-- HeatPumpController
     PlannerEntity <|-- PlannerSensor
+    PlannerEntity <|-- PondThermostat
     PlannerEntity <|-- SettingNumber
     PlannerEntity <|-- SettingSwitch
     PlannerEntity <|-- CopMethodSelect
@@ -757,17 +766,125 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as user
-    participant N as number / switch / select
+    participant N as thermostat / number / switch / select
     participant Co as PlannerCoordinator
     participant St as PlannerStore
     U->>N: set value
     N->>Co: async_set_setting(key, value)
     Co->>St: set_setting (saved after 60 s)
-    alt target, band, cover or control
+    alt target (thermostat), band, cover or control
         Co->>Co: schedule_replan (2 s debounce)
     end
     alt volume, flow, COP method or cover
         Co->>Co: recalculate COP, heat loss, thermal power
     end
     Co->>N: async_set_updated_data
+```
+
+## 8. Lovelace card (#10)
+
+Design: [`design/2026-11-17-lovelace-card.md`](design/2026-11-17-lovelace-card.md). User documentation:
+[`card.md`](card.md).
+
+### 8.1 Modules
+
+```mermaid
+classDiagram
+    direction TB
+    class PondHeatpumpPlannerCard {
+        <<LitElement pond-heatpump-planner-card>>
+        +setConfig(config)
+        +hass
+        +getCardSize() int
+        +getConfigElement()$
+        +getStubConfig(hass)$
+    }
+    class PondHeatpumpPlannerCardEditor {
+        <<LitElement, ha-form>>
+        +setConfig(config)
+    }
+    class PhpcGauge {
+        <<LitElement phpc-gauge>>
+        +model GaugeModel
+        +set-target event
+        +set-band event
+    }
+    class viewmodel {
+        <<module>>
+        +buildViewModel(hass, config, now) CardViewModel
+        +heatPumpEntities(hass, config, planner)
+    }
+    class entities {
+        <<module>>
+        +plannerDevices(hass) list
+        +resolvePlanner(hass, deviceId) map
+    }
+    class chart {
+        <<module>>
+        +scales(plan, w, h) ChartScales
+        +runs(quarters)
+        +summary(plan, t, language) string
+    }
+    class gaugeMath {
+        <<module gauge-math>>
+        +ring(target) Ring
+        +angleOf(ring, temp) float
+        +tempAt(ring, x, y, step, min, max) float
+    }
+    class templates {
+        <<modules>>
+        +illustration(model, t)
+        +planChart(plan, t, language)
+        +figures / switches / modelSection / nextLine
+    }
+    class localize {
+        <<module>>
+        +localizer(language) Localizer
+    }
+    PondHeatpumpPlannerCard ..> viewmodel : on hass change
+    viewmodel ..> entities
+    PondHeatpumpPlannerCard o-- PhpcGauge
+    PondHeatpumpPlannerCard ..> templates
+    templates ..> chart
+    PhpcGauge ..> gaugeMath
+    PondHeatpumpPlannerCard ..> localize
+    PondHeatpumpPlannerCardEditor ..> entities
+```
+
+### 8.2 Loading and updating
+
+```mermaid
+sequenceDiagram
+    participant Py as integration (async_setup)
+    participant FE as Home Assistant frontend
+    participant Card as card
+    participant VM as buildViewModel
+    participant G as phpc-gauge
+    participant Svc as hass.callService
+    Py->>Py: static path /pond_heatpump_price_planner/pond-heatpump-planner-card.js
+    Py->>FE: add_extra_js_url(…?v=version)
+    FE->>Card: define elements, window.customCards
+    FE->>Card: setConfig, hass
+    Card->>VM: build(hass, config)
+    VM-->>Card: view model + signature (last_updated of its entities)
+    Card->>Card: render only when the signature changed
+    G->>G: drag / − + / slider (local value, 1 s debounce)
+    G-->>Card: set-target / set-band
+    Card->>Svc: climate.set_temperature / number.set_value
+    Card->>Svc: switch.turn_on / turn_off (switches)
+```
+
+### 8.3 Animations
+
+```mermaid
+stateDiagram-v2
+    [*] --> Still
+    Still --> Moving: boolean entity on (fan, flow, compressor)
+    Moving --> Still: entity off, unavailable or not configured
+    Moving --> Still: prefers-reduced-motion
+    note right of Moving
+        fan: rotate · water: dashes along the pipes
+        compressor: piston and refrigerant dashes
+        pond waves: always, except reduced motion
+    end note
 ```
