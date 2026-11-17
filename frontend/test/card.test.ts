@@ -72,6 +72,14 @@ describe("card", () => {
     expect(hass.calls).toEqual([{ domain: "climate", service: "set_temperature", data: { entity_id: "climate.pond_thermostat", temperature: 14.7 } }]);
   });
 
+  it("shows the band in °C and a legend under the chart", async () => {
+    const card = await mount();
+    const gauge = card.shadowRoot.querySelector("phpc-gauge");
+    await gauge.updateComplete;
+    expect(gauge.shadowRoot.textContent).toContain("± 0.25 °C");
+    expect(card.shadowRoot.querySelectorAll(".chart-legend li").length).toBeGreaterThanOrEqual(7);
+  });
+
   it("sends the band from the slider", async () => {
     vi.useFakeTimers();
     const hass = fakeHass();

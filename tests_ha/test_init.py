@@ -73,6 +73,13 @@ async def test_thermostat_sets_target_and_shows_heating(hass: HomeAssistant, pon
     assert state(hass, "climate", "thermostat").state == "heat"
 
 
+async def test_band_is_in_celsius(hass: HomeAssistant, pond_states) -> None:
+    entry = await setup(hass)
+    hass.data["_entry_id"] = entry.entry_id
+    band = state(hass, "number", "band")
+    assert band.attributes["unit_of_measurement"] == "°C" and band.state == "0.25"
+
+
 async def test_old_target_number_is_removed(hass: HomeAssistant, pond_states) -> None:
     from homeassistant.helpers import entity_registry as er
 
