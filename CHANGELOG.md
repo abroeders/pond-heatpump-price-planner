@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The card is resizable in sections dashboards and adapts its layout to its width: one, two or three
+  columns (#16).
+
+### Added
+
 - Plan chart of the card: 48 hours option and a legend below the chart (#14).
 
 ### Changed

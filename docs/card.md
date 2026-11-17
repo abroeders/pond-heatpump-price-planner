@@ -14,6 +14,23 @@ resource to add.
 
 After an update of the integration, reload the browser page once if the card does not change.
 
+## Size and layout
+
+The card adapts its layout to its own width:
+
+| Card width | Layout |
+|---|---|
+| narrow (one dashboard column) | everything stacked |
+| about two columns (560 px and more) | heat pump and thermostat side by side; the plan over the full width; figures with switches next to the model |
+| three columns or more (900 px and more) | heat pump, thermostat and figures with switches side by side; plan and model over the full width |
+
+**Making it wider:**
+- **Sections dashboard:** the card fills its section by default. To make it 2, 3 or more dashboard columns
+  wide, make the section wider (*Edit section → column span*); the card follows. You can also make the card
+  narrower within its section, down to half a section.
+- **Masonry dashboard:** the card takes the width of its column.
+- **Panel view:** the card takes the full width of the screen.
+
 ## What it shows
 
 | Section | Contents |
