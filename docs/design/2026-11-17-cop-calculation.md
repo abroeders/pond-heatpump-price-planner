@@ -79,7 +79,7 @@ heat_kW = flow_m3h × 1.163 × (T_water_out − T_water_in)
 |---|---|---|
 | Water inlet / outlet temperature sensors | – | Required for this method |
 | Energy sensor | – | Optional; otherwise the power sensor is integrated |
-| Flow through the heat pump (m³/h) | 3.0 | Number entity, 0.5–20 m³/h, step 0.1; 0.25 m³/h shifts the COP by ~9 % at 3 m³/h |
+| Flow through the heat pump (m³/h) | 3.0 | Number entity, 0.5–20 m³/h, step 0.25; 0.25 m³/h shifts the COP by ~9 % at 3 m³/h |
 | Run threshold (W) | 100 | |
 | Settle time (min) | 20 | |
 | Window (days) | 14 | 7–42 |
@@ -111,7 +111,7 @@ loss instead of the single neighbouring off-period, which is less noisy and need
 
 | Option | Default |
 |---|---|
-| Pond volume (m³) | – (method disabled when empty); number entity, 1–500 m³, step 0.1 |
+| Pond volume (m³) | – (method disabled when empty); number entity, 1–500 m³, step 0.25 |
 | Loss window (days) | 21 |
 
 ### 4.3 Limits
@@ -153,8 +153,8 @@ flow applies to the whole window.
 
 | Entity | Unit | Range, step |
 |---|---|---|
-| `number.<name>_pond_volume` | m³ | 1–500, 0.1 (0 or unset: pond method, heat loss and thermal power unavailable) |
-| `number.<name>_flow` | m³/h | 0.5–20, 0.1 (unset: flow method unavailable) |
+| `number.<name>_pond_volume` | m³ | 1–500, 0.25 (0 or unset: pond method, heat loss and thermal power unavailable) |
+| `number.<name>_flow` | m³/h | 0.5–20, 0.25 (unset: flow method unavailable) |
 
 
 | Entity | State | Attributes |
