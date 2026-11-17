@@ -134,10 +134,10 @@ An inline SVG of the installation as a simple process diagram:
 ```
         air in ──►  ┌──────────────────────┐  ──► air out
                     │  ( fan )   [comp]    │
-                    │   mode · electrical  │
-                    │          · thermal   │
+                    │                mode  │────╮
+                    │                      │    ╰─■ [⚇] socket: electrical 386 W
         liquid 17 °C │ ┌─[ /\/\/\ ]─┐ gas 52 °C
-                    └───┼─ heat exch. ─┼───┘
+                    └───┼ thermal 2.85 kW ┼──┘
      ┌──── P ───────────┘ water in     └ water out ──┐
      │  pump · running · 43 % · 103 W                │
      │ supply                                 return │
@@ -156,7 +156,8 @@ An inline SVG of the installation as a simple process diagram:
 | Water in / water out | value at the supply and return pipes, below the housing | `water_in`, `water_out` (temperature) |
 | Refrigerant after the heat exchanger | value at the liquid line where it leaves the heat exchanger. In counterflow the refrigerant leaves at the cold-water side, so this is the subcooled liquid temperature (on the reference heat pump the sensor called "condenser temperature": 17 °C with water 14 → 16 °C and hot gas 52 °C) | `liquid` (temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
-| Electrical and thermal power | both on the housing, one under the other | `power`, the planner's `thermal_power` |
+| Electrical power | at a power cord from the heat pump to a wall socket, labelled "electrical" | `power` |
+| Thermal power | under the heat exchanger, labelled "thermal" | the planner's `thermal_power` |
 | Mode | label (off/low/high) on the housing | the planner's `mode` |
 | **Fan animation** | the fan turns while the entity is on | `fan` (boolean, e.g. "fan active") |
 | **Water flow animation** | dashes move along the supply and return pipes in the flow direction while the entity is on | `flow` (boolean, e.g. "circulation active") |
