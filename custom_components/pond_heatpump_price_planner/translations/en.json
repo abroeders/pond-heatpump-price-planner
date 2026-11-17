@@ -4,8 +4,16 @@
       "user": {
         "title": "Pond heat pump",
         "description": "Set up a price planner for a pond heat pump.",
-        "data": { "name": "Name" }
+        "data": {
+          "name": "Name"
+        }
       }
+    }
+  },
+  "issues": {
+    "heat_pump_not_following": {
+      "title": "Heat pump does not follow the planner",
+      "description": "{entity} has not followed the mode set by the planner for two hours. Check that the heat pump is on, that no other automation changes its setpoint, and that the setpoint offsets in the options suit this heat pump."
     }
   }
 }
