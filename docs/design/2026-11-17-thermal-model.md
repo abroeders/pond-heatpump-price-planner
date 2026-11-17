@@ -162,26 +162,29 @@ solar gain, wind or a changed installation.
 
 ## 6. Module interfaces (`core/`)
 
+*Revised during implementation:* one responsibility per module, fits as strategies. Class and sequence
+diagrams: [`../architecture.md`](../architecture.md) §3.
+
+| Module | Contents |
+|---|---|
+| `samples.py` | `Sample`, `PowerIntegrator`, `to_quarters`, `prune`, `merge` |
+| `model.py` | `ModelParams` (step, k, rate, copy), `ModeClassifier` |
+| `learning.py` | `Hour`, `hourly`, `LearningContext`, `Fitter` protocol, `SlowFit`, `CoolingFit`, `Learner`, `FitReport` |
+| `seeding.py` | `HistorySource` protocol, `SeedEntities`, `seed`, `needs_seed` |
+| `tracking.py` | `PredictionTracker` |
+
+Home Assistant side: `storage.py` (`PlannerStore`, repository) and `history.py` (`RecorderHistory`, adapter
+to `HistorySource`; `async_seed_store`).
+
 ```python
-# samples.py
-@dataclass
-class Sample: t: float; pond: float | None; outdoor: float | None; power: float | None; cover: bool
-class PowerIntegrator:                     # step-function mean over an interval
-    def add(self, t: float, value: float | None) -> None
-    def mean(self, start: float, end: float) -> float | None
-def to_quarters(series: dict[str, list[tuple[float, float | None]]], start: float, end: float,
-                cover: bool = False) -> list[Sample]
-def prune(samples: list[Sample], now: float, days: int = 42) -> list[Sample]
+class Fitter(Protocol):
+    kind: str
+    def fit(self, params: ModelParams, ctx: LearningContext) -> tuple[ModelParams, FitReport]: ...
 
-# model.py
-DEFAULTS: ModelParams
-def hourly(samples, tz: str, low_w: float, high_w: float) -> list[Hour]
-def fit_slow(params, samples, now, tz, low_w, high_w) -> tuple[ModelParams, FitReport]
-def fit_k(params, samples, now, tz, low_w, high_w, cover: bool) -> tuple[ModelParams, FitReport]
+class Learner:
+    def __init__(self, fitters: Sequence[Fitter] | None = None)  # default [SlowFit(), CoolingFit()]
+    def learn(self, params, ctx) -> tuple[ModelParams, list[FitReport]]
 ```
-
-`FitReport` holds the number of hours used, the new and old values and why a fit was rejected; it is shown
-in a diagnostic sensor attribute and in diagnostics.
 
 ## 7. Tests
 
