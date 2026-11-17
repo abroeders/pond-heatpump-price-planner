@@ -23,10 +23,13 @@
     .pump-running .pumptri { fill: #43a047; }
     .badge { fill: #1e88e5; }
     .cord { fill: none; stroke: #424242; stroke-width: 3; stroke-linecap: round; }
+    .wave { animation: wave 4s linear infinite; }
+    .wave2 { animation: wave 6s linear infinite reverse; }
+    @keyframes wave { from { transform: translateX(0); } to { transform: translateX(40px); } }
     @keyframes flow { to { stroke-dashoffset: -48; } }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pump { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-    @media (prefers-reduced-motion: reduce) { .flow, .air, .fan, .piston, .rflow { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .air, .fan, .piston, .rflow, .wave, .wave2 { animation: none; } }
   </style>
   <rect class="bg" width="640" height="480" rx="12"/>
 
@@ -138,7 +141,11 @@
 
   <!-- pond -->
   <path d="M60 380 H580 V450 Q580 460 570 460 H70 Q60 460 60 450 Z" fill="#e3f2fd" stroke="#64b5f6" stroke-width="2"/>
-  <path d="M62 394 q20 -7 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t36 0 V458 H62 Z" fill="#90caf9" opacity=".8"/>
+  <clipPath id="tub"><path d="M61 381 H579 V450 Q579 459 570 459 H70 Q61 459 61 450 Z"/></clipPath>
+  <g clip-path="url(#tub)">
+    <path class="wave" d="M22 394 q20 -7 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 V458 H22 Z" fill="#90caf9" opacity=".8"/>
+    <path class="wave2" d="M22 400 q20 5 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 V458 H22 Z" fill="#64b5f6" opacity=".25"/>
+  </g>
   <text x="320" y="438" class="label" text-anchor="middle">pond</text>
   <text x="320" y="422" font-size="22" font-weight="700" fill="#0d47a1" text-anchor="middle">14.6 °C</text>
 </svg>

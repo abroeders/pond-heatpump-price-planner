@@ -152,7 +152,7 @@ An inline SVG of the installation as a simple process diagram:
 
 | Element | Shown | Entity (editor) |
 |---|---|---|
-| Pond | water temperature in the tub | the planner's thermostat (`current_temperature`) |
+| Pond | water temperature in the tub; the water surface waves gently (two wave layers moving slowly in opposite directions) | the planner's thermostat (`current_temperature`) |
 | Water in / water out | value at the supply and return pipes, below the housing | `water_in`, `water_out` (temperature) |
 | Refrigerant after the heat exchanger | value at the liquid line where it leaves the heat exchanger. In counterflow the refrigerant leaves at the cold-water side, so this is the subcooled liquid temperature (on the reference heat pump the sensor called "condenser temperature": 17 °C with water 14 → 16 °C and hot gas 52 °C) | `liquid` (temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
