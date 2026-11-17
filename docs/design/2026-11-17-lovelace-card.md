@@ -19,11 +19,11 @@ frontend/                      TypeScript sources (not loaded by Home Assistant)
   src/…
   package.json, tsconfig.json, build.mjs
 custom_components/pond_heatpump_price_planner/
-  frontend/pond-planner-card.js   built bundle, committed
+  frontend/pond-heatpump-planner-card.js   built bundle, committed
 ```
 
 - **Serving.** `async_setup` (integration level, once) registers the bundle as a static path:
-  `/pond_heatpump_price_planner/pond-planner-card.js`, with cache headers.
+  `/pond_heatpump_price_planner/pond-heatpump-planner-card.js`, with cache headers.
 - **Registration.** `frontend.add_extra_js_url` loads it for all dashboards. The URL carries the integration
   version (`?v=0.2.0`), so browsers load the new card after an update. This works for storage and YAML
   dashboards and needs no Lovelace resource.
@@ -34,7 +34,7 @@ custom_components/pond_heatpump_price_planner/
 
 ### 2.2 Card type and picker
 
-- **Type:** `custom:pond-planner-card`.
+- **Type:** `custom:pond-heatpump-planner-card`.
 - **Picker:** registered in `window.customCards` with a name, a description and `preview: true`, so it
   appears in the card picker with a live preview.
 - **Stub config:** `getStubConfig()` picks the first planner device. `getConfigElement()` returns the visual
@@ -87,18 +87,38 @@ its own, so the integration stays the single source of truth.
 
 ## 5. Heat pump illustration
 
-An inline SVG of an air-to-water heat pump: housing with a fan, compressor, heat exchanger, and the water
-circuit to and from a pond.
+An inline SVG of the installation as a simple process diagram:
+- the pond, drawn as a tub of water, with the pond temperature shown in the water;
+- a supply pipe from the pond through a **circulation pump** to the heat pump's water inlet;
+- the air-to-water heat pump: housing, fan, compressor and heat exchanger;
+- a return pipe from the heat pump's water outlet back to the pond.
+
+```
+        air in ──►  ┌──────────────────────┐  ──► air out
+                    │  ( fan )   [comp]    │
+                    │  mode · power        │
+     ┌──── P ─────► │ water in   water out │ ─────┐
+     │   pump       └──────────────────────┘      │
+     │ supply                              return │
+  ┌──┴────────────────────────────────────────────┴──┐
+  │  ~~~~~~~~~~~~~~~  pond  14.6 °C  ~~~~~~~~~~~~~~~  │
+  └───────────────────────────────────────────────────┘
+```
+
+- **Pump symbol:** the standard installation symbol for a centrifugal pump (a circle with a triangle pointing
+  in the flow direction, as in ISO 14617 / P&ID drawings), not a picture of a pump.
+- **Flow direction:** arrows on the pipes show it: pond → pump → water inlet, water outlet → pond.
 
 | Element | Shown | Entity (editor) |
 |---|---|---|
-| Water in / water out | value next to the pipe | `water_in`, `water_out` (temperature) |
+| Pond | water temperature in the tub | the planner's thermostat (`current_temperature`) |
+| Water in / water out | value at the heat pump's connections | `water_in`, `water_out` (temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
 | Electrical power | value on the housing | `power` |
-| Thermal power | value at the outlet pipe | the planner's `thermal_power` |
+| Thermal power | value at the return pipe | the planner's `thermal_power` |
 | Mode | label (off/low/high) on the housing | the planner's `mode` |
 | **Fan animation** | the fan turns while the entity is on | `fan` (boolean, e.g. "fan active") |
-| **Water flow animation** | dashes move along the pipes, from the pond through the heat pump and back, while the entity is on | `flow` (boolean, e.g. "circulation active") |
+| **Water flow animation** | dashes move along the supply and return pipes in the flow direction, and the pump symbol is highlighted, while the entity is on | `flow` (boolean, e.g. "circulation active") |
 | Compressor | glows while the entity is on | `compressor` (boolean) |
 
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
@@ -116,7 +136,9 @@ others are left for the user. On the reference installation:
   label.
 - The flow speed is fixed. It does not suggest a measured flow rate.
 
-**Missing values** are left out of the drawing, with no empty labels.
+**Missing values** are left out of the drawing, with no empty labels. The drawing scales with the card
+width; the values stay readable at phone width (the labels move inside the drawing's bounding box rather than
+shrinking below 12 px).
 
 ## 6. Small additions to the integration
 
@@ -150,15 +172,15 @@ not grow.
 ```mermaid
 classDiagram
     direction TB
-    class PondPlannerCard {
-        <<LitElement custom:pond-planner-card>>
+    class PondHeatpumpPlannerCard {
+        <<LitElement custom:pond-heatpump-planner-card>>
         +setConfig(config)
         +hass
         +getCardSize() int
         +getConfigElement()$
         +getStubConfig(hass)$
     }
-    class PondPlannerCardEditor {
+    class PondHeatpumpPlannerCardEditor {
         <<LitElement>>
         +setConfig(config)
         +hass
@@ -183,22 +205,24 @@ classDiagram
     }
     class FiguresSection
     class ControlsSection
-    class HeatPumpIllustration
+    class HeatPumpIllustration {
+        +pond, pump, heat pump, pipes
+    }
     class ModelSection
     class Localizer {
         +t(key, args) string
     }
-    PondPlannerCard ..> ViewModelBuilder : on hass change
+    PondHeatpumpPlannerCard ..> ViewModelBuilder : on hass change
     ViewModelBuilder ..> EntityResolver
     ViewModelBuilder ..> CardViewModel : creates
-    PondPlannerCard o-- NowSection
-    PondPlannerCard o-- PlanChart
-    PondPlannerCard o-- FiguresSection
-    PondPlannerCard o-- ControlsSection
-    PondPlannerCard o-- HeatPumpIllustration
-    PondPlannerCard o-- ModelSection
-    PondPlannerCard ..> Localizer
-    PondPlannerCardEditor ..> EntityResolver : prefill
+    PondHeatpumpPlannerCard o-- NowSection
+    PondHeatpumpPlannerCard o-- PlanChart
+    PondHeatpumpPlannerCard o-- FiguresSection
+    PondHeatpumpPlannerCard o-- ControlsSection
+    PondHeatpumpPlannerCard o-- HeatPumpIllustration
+    PondHeatpumpPlannerCard o-- ModelSection
+    PondHeatpumpPlannerCard ..> Localizer
+    PondHeatpumpPlannerCardEditor ..> EntityResolver : prefill
 ```
 
 - **Pure data layer.** `ViewModelBuilder`, `EntityResolver`, `Localizer` and the chart scaling are plain
@@ -213,11 +237,11 @@ classDiagram
 sequenceDiagram
     participant HA as Home Assistant (Python)
     participant FE as frontend
-    participant Card as PondPlannerCard
+    participant Card as PondHeatpumpPlannerCard
     participant VM as ViewModelBuilder
     participant Svc as hass.callService
     HA->>HA: async_setup: register static path, add_extra_js_url(?v=version)
-    FE->>FE: load pond-planner-card.js, define custom elements, window.customCards
+    FE->>FE: load pond-heatpump-planner-card.js, define custom elements, window.customCards
     FE->>Card: setConfig(config), set hass
     Card->>VM: build(hass, config)
     VM-->>Card: CardViewModel (only when relevant entities changed)
@@ -233,7 +257,7 @@ This keeps a busy dashboard cheap.
 ## 9. Configuration
 
 ```yaml
-type: custom:pond-planner-card
+type: custom:pond-heatpump-planner-card
 device_id: 0123456789abcdef          # the planner device (editor: device picker)
 hours: 36                            # 24 or 36
 sections: [now, plan, figures, heat_pump, controls, model]   # order and visibility
