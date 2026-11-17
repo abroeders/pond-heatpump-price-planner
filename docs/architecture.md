@@ -23,6 +23,11 @@ flowchart LR
             LEARN[learning.py]
             SEED[seeding.py]
             TRACK[tracking.py]
+            PRICES[prices.py<br/>timeseries.py]
+            FC[forecasts.py]
+            COSTS[costs.py]
+            PLAN[planner.py]
+            TUNE[tuning.py]
         end
     end
     S1 & S2 & S3 --> SAMP
@@ -33,6 +38,11 @@ flowchart LR
     STORE --> LEARN
     LEARN --> MODEL
     SAMP --> LEARN
+    PRICES & FC --> COSTS
+    COSTS --> PLAN
+    MODEL --> PLAN
+    PLAN --> TUNE
+    STORE --> TUNE
 ```
 
 The integration is split in two layers:
@@ -57,7 +67,10 @@ The integration is split in two layers:
 | Dependency inversion + **Adapter** | `seeding.seed()` depends on the `HistorySource` protocol; `RecorderHistory` adapts the recorder | the core never imports Home Assistant and is tested with a fake source |
 | **Repository** | `PlannerStore` | one place that loads and saves samples and parameters |
 | Liskov / immutability | fits return new `ModelParams` (via `copy()`), never mutate their input | fits can be chained and compared safely |
-| Interface segregation | small protocols (`Fitter.fit`, `HistorySource.series`) | implementations need only what they use |
+| Interface segregation | small protocols (`Fitter.fit`, `HistorySource.series`, `Planner.make_plan`, `AttributeParser.parse`) | implementations need only what they use |
+| **Strategy** + **Chain of responsibility** | `AttributeParser` implementations (`DictListParser`, `PlainListParser`) tried in turn by `parse_intervals` | a new price format is a new parser; the planner never sees attribute formats |
+| Open/closed + **Strategy** | `Planner` protocol, `DynamicProgrammingPlanner` | another optimiser can replace it without touching callers (the tuning takes any `Planner`) |
+| Separation of cost and optimisation | `EnergyCosts` computes € per quarter and mode (solar surplus, feed-in, surcharge); the planner only minimises | solar, feed-in and surcharge change no planner code |
 
 ## 3. Thermal model and learning (#2)
 
@@ -262,3 +275,157 @@ flowchart LR
 
 The slope and the regressors cover the same interval. With only the middle hour as regressor, the gains
 come out ~30 % too low (errors in variables). See the design of #2, §2.
+
+## 4. Planner (#3)
+
+### 4.1 Classes
+
+```mermaid
+classDiagram
+    direction TB
+    class Interval {
+        +float start
+        +float end
+        +float value
+    }
+    class AttributeParser {
+        <<interface>>
+        +parse(attributes, tz) list
+    }
+    class DictListParser {
+        +tuple keys
+        +tuple value_keys
+        +parse(attributes, tz) list
+    }
+    class PlainListParser {
+        +parse(attributes, tz) list
+    }
+    class PriceTransform {
+        +float multiplier
+        +float addition
+        +apply(value) float
+    }
+    class OutdoorForecast {
+        +list points
+        +quarters(start, n, measured) list
+    }
+    class SolarSurplus {
+        +float base_load_kw
+        +quarters(start, n, measured_kw, forecast, forecast_now_kw) list
+    }
+    class EnergyCosts {
+        +list price
+        +Optional~list~ feed_in
+        +Optional~list~ surplus_kw
+        +float expensive_surcharge
+        +planning_prices() ndarray
+        +matrix(params, planning) ndarray
+    }
+    class PlanRequest {
+        +float start
+        +float pond
+        +str mode_now
+        +float target
+        +float band
+        +ModelParams params
+        +list outdoor
+        +EnergyCosts costs
+        +float margin
+        +bool cover
+        +float start_penalty
+        +bool allow_high
+        +quarters int
+    }
+    class Plan {
+        +list modes
+        +list temps
+        +list prices
+        +float energy_kwh
+        +float cost
+        +int starts
+        +float expensive_share
+        +Optional~float~ next_start
+        +Optional~float~ next_stop
+        +mode str
+    }
+    class Planner {
+        <<interface>>
+        +make_plan(request) Plan
+    }
+    class DynamicProgrammingPlanner {
+        +make_plan(request) Plan
+    }
+    class TuningResult {
+        +float surcharge
+        +dict costs
+        +float days
+        +str reason
+    }
+    AttributeParser <|.. DictListParser
+    AttributeParser <|.. PlainListParser
+    AttributeParser ..> Interval : points → intervals
+    SolarSurplus ..> Interval : forecast
+    Planner <|.. DynamicProgrammingPlanner
+    DynamicProgrammingPlanner ..> PlanRequest : reads
+    DynamicProgrammingPlanner ..> Plan : creates
+    PlanRequest o-- EnergyCosts
+    PlanRequest o-- ModelParams
+    TuningResult <.. Planner : tune_surcharge replays with
+```
+
+Module functions: `parse_intervals` (tries the parsers in turn), `quarter_values`, `close_intervals`,
+`solar_intervals`, `surplus_now`, `summarize`, `tune_surcharge`.
+
+### 4.2 Planning cycle (core part)
+
+```mermaid
+sequenceDiagram
+    participant Caller as coordinator (#4, #5)
+    participant Prices as prices.parse_intervals
+    participant TS as timeseries.quarter_values
+    participant FC as OutdoorForecast / SolarSurplus
+    participant Costs as EnergyCosts
+    participant DP as DynamicProgrammingPlanner
+    Caller->>Prices: price sensor attributes (+ forecast sensor)
+    Prices-->>Caller: intervals
+    Caller->>TS: intervals → price per quarter, PriceTransform
+    Caller->>FC: weather forecast, outdoor sensor, PV forecast, surplus sensor
+    FC-->>Caller: outdoor and surplus per quarter
+    Caller->>Costs: EnergyCosts(price, feed_in, surplus, surcharge)
+    Caller->>DP: make_plan(PlanRequest)
+    DP->>Costs: matrix(params, planning=True) and matrix(params)
+    DP->>DP: backward induction over grid × previous mode
+    DP->>DP: forward read-out from the measured pond temperature
+    DP-->>Caller: Plan (only the first quarter is executed)
+```
+
+### 4.3 Dynamic programming
+
+```mermaid
+flowchart TB
+    T["for t = N−1 … 0"] --> P["for previous mode p, next mode m"]
+    P --> S["T′ = step(grid, m, outdoor[t], starting = p off and m on)"]
+    S --> C["cost = energy[t, m] (+ surcharge) + start penalty + band penalty(T′) + V[t+1, m](T′)"]
+    C --> M["V[t, p] = min over m; policy[t, p] = argmin"]
+    M --> T
+    V0["V[N] = −(T − target) · heat value"] --> T
+```
+
+### 4.4 Nightly surcharge tuning
+
+```mermaid
+sequenceDiagram
+    participant Timer as Daily timer
+    participant Tune as tune_surcharge
+    participant DP as Planner
+    Timer->>Tune: samples (14 days, with prices), params, target, band
+    loop candidate in 0, 0.15, 0.30, 0.50, 1.00 €/kWh
+        loop every hour of the window
+            Tune->>DP: make_plan(prices known at that time, surcharge)
+            DP-->>Tune: plan
+            Tune->>Tune: execute 4 quarters in the model, add real cost
+        end
+        Tune->>Tune: reject if the pond left the band
+    end
+    Tune-->>Timer: TuningResult (lowest real cost, ties: smallest)
+```
