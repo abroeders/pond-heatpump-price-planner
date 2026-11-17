@@ -1,7 +1,7 @@
 # COP calculation
 
 - Issue: #8
-- Status: **approved** (2026-11-17)
+- Status: **approved** (2026-11-17); §6 heat loss and thermal power added 2026-11-17, **draft**
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -126,17 +126,36 @@ The ratio COP low / COP high of both methods is compared with the ratio of the m
 the diagnostic attribute `model_check` says so. The planner keeps using the model; this is only a
 signal.
 
-## 6. Entities (added to #5)
+## 6. Pond heat loss and thermal power
+
+Both use the thermal capacity `C` (kWh/K) from the pond volume option (§4.2) and are unavailable without it.
+
+| Quantity | State | How | Attributes |
+|---|---|---|---|
+| Heat loss coefficient | W/K | `k(cover) · C · 1000` from the thermal model (#2); follows the insulation cover | `loss_b_w_per_k` and `loss_a_w` from the loss fit of method 2, `cover` |
+| Thermal power to the pond | W | `gain[m] · power[m] · C · 1000` for the current mode m (0 when off), from the model | `flow_mean_w`: flow-method mean over the counted running time in the window; `mode` |
+
+The thermal power has no flow-based value per moment: with whole-degree water temperatures one step is
+`3 m³/h × 1.163 × 1 K ≈ 3.5 kW`, so only the mean over a long window means something. The model value is
+stable and is what the planner uses.
+
+Reference pond (21 m³, `C` = 24.4 kWh/K, model of #2): heat loss ≈ 0.0121 × 24.4 × 1000 ≈ **295 W/K**
+(the loss fit of method 2 gave 150 W/K + 600 W); thermal power ≈ 0.304 × 0.384 × 24.4 × 1000 ≈ **2.85 kW**
+in low mode and ≈ 0.209 × 0.918 × 24.4 × 1000 ≈ **4.7 kW** in high mode.
+
+## 7. Entities (added to #5)
 
 | Entity | State | Attributes |
 |---|---|---|
 | `sensor.<name>_cop_flow` | COP over the window | `cumulative`, `by_outdoor`, `by_power`, `hours`, `window_days`, `flow` |
 | `sensor.<name>_cop_pond` | COP over the window | `by_outdoor`, `by_power`, `hours`, `loss_a_kw`, `loss_b_kw_per_k`, `capacity_kwh_per_k` |
+| `sensor.<name>_heat_loss` | W/K | see §6 |
+| `sensor.<name>_thermal_power` | W, device class power, state class measurement | see §6 |
 
-- No state class `measurement` and no long-term statistics: these are rolling window values.
+- The COP sensors have no state class `measurement` and no long-term statistics: they are rolling window values.
 - Precision: 1 decimal.
 
-## 7. Interface (`core/cop.py`)
+## 8. Interface (`core/cop.py`)
 
 ```python
 @dataclass
@@ -152,7 +171,7 @@ def fit_loss(samples, now, days, capacity) -> LossFit | None
 def cop_pond(samples, loss, now, window_days, capacity, low_w, high_w) -> CopResult
 ```
 
-## 8. Tests
+## 9. Tests
 
 - **`FlowAccumulator` timing:** settle time, the run threshold, a counter reset and gaps.
 - **Synthetic data with 1 K quantisation:** the true COP of 5.0 is recovered within 5 % over 14 days;
@@ -163,7 +182,7 @@ def cop_pond(samples, loss, now, window_days, capacity, low_w, high_w) -> CopRes
   - the pond method gives 4.1 ± 0.3;
   - both have a ratio low/high between 1.3 and 1.7.
 
-## 9. Out of scope
+## 10. Out of scope
 
 COP as a direct planner input; COP per moment or per day; flow measurement hardware; long-term statistics
 for the COP sensors.
