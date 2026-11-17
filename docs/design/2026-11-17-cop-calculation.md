@@ -1,7 +1,8 @@
 # COP calculation
 
 - Issue: #8
-- Status: **approved** (2026-11-17); §6–7 heat loss, thermal power and number entities added 2026-11-17
+- Status: **approved** (2026-11-17); §6–7 heat loss, thermal power and number entities added 2026-11-17;
+  revised during implementation, see §11
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -198,3 +199,24 @@ def cop_pond(samples, loss, now, window_days, capacity, low_w, high_w) -> CopRes
 
 COP as a direct planner input; COP per moment or per day; flow measurement hardware; long-term statistics
 for the COP sensors.
+
+## 11. Revisions during implementation (2026-11-17)
+
+**Pond method aligned with #2.** The pond method now uses the same window-aligned slope and regressors as the
+thermal model (the slope over hours h−2 … h+2, electricity and temperature difference averaged over the same
+interval). With that, the methods agree:
+
+| Method | COP | low | high | ratio |
+|---|---|---|---|---|
+| Flow (3.0 m³/h) | 5.34 | 6.95 | 4.64 | 1.50 |
+| Pond (loss 0.63 kW + 0.22 kW/K) | 5.50 | 6.85 | 4.98 | 1.38 |
+
+The earlier 4.1 (§2) came from the attenuation bias described in the thermal model design.
+
+**COP output selectable.**
+- A select entity `select.<name>_cop_method` with `flow`, `pond` or `average` (default `average`) decides
+  what `sensor.<name>_cop` shows (`core.cop.combine`). The average takes the mean of both per value and per
+  breakdown, and uses the other method where one has no value.
+- `sensor.<name>_cop_flow` and `sensor.<name>_cop_pond` remain for comparison.
+
+**Formulas.** All formulas are described for users in [`../cop.md`](../cop.md).
