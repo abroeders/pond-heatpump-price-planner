@@ -67,12 +67,11 @@ Top to bottom:
 ┌──────────────────────────────────────────────────────────┐
 │        [heat pump illustration with live values]         │  1. §5
 ├──────────────────────────────────────────────────────────┤
-│                 ╭──── thermostat gauge ────╮             │  2. §4.1
-│                 │   pond 14.6 °C           │             │
-│                 │   heating · low · in band│             │
-│                 │   target  − 14.5 °C +    │             │
-│                 │   band    − ±0.25 K +    │             │
-│                 ╰──────────────────────────╯             │
+│          ╭──── thermostat gauge ────╮   band ±0.25 K   │  2. §4.1
+│          │   pond 14.6 °C           │      ┃ 1.0       │
+│          │   heating · low · in band│      ┃           │
+│          │   target  − 14.5 °C +    │      ●  0.25     │
+│          ╰──────────────────────────╯      ┃ 0.1       │
 │ next stop 03:15 · next start 11:00 · controlling ●       │
 ├──────────────────────────────────────────────────────────┤
 │  temperature + band ─────  price (step line)      │now   │  3. plan chart (24/36 h)
@@ -87,8 +86,8 @@ Top to bottom:
 └──────────────────────────────────────────────────────────┘
 ```
 
-- **Responsive:** one column at phone width. In a wide dashboard column the gauge sits next to the
-  next-start/stop and key-figure lines.
+- **Responsive:** the band slider stays next to the gauge, also at phone width; the gauge shrinks with the
+  card. In a wide dashboard column the gauge and slider sit next to the next-start/stop and key-figure lines.
 - **Sections:** each one can be hidden or moved in the editor; this is the default order.
 - **Unconfigured parts:** a section whose entities are unavailable is hidden (e.g. COP without a pond
   volume), rather than showing errors.
@@ -105,12 +104,12 @@ A ring like Home Assistant's thermostat card, made for a narrow band:
 | Pond marker | a triangle on the inside of the ring at the measured pond temperature | – |
 | Centre | the pond temperature (large); below it the HVAC action, the mode and whether the pond is in the band ("heating · low · in band", "idle · off · above band") | – |
 | Target stepper | − / value / + | 0.1 °C per press, 5–28 °C, sets the thermostat (`climate.set_temperature`) |
-| Band stepper | − / value / + | 0.05 K per press, 0.1–1.0 K, sets the band number (`number.set_value`) |
+| Band slider | a vertical slider to the right of the gauge, 0.1 K at the bottom to 1.0 K at the top, filled green up to the value; the value ("± 0.25 K") above it | drag in steps of 0.05 K, or arrow keys; sets the band number (`number.set_value`) |
 
 - **Colours:** band green; above the band orange, below the band blue for the status text; target handle in
   the primary colour; pond marker dark blue. All as theme variables, so dark mode works.
 - **Less traffic:** a change is sent 1 s after the last press or drag, so quick presses become one
-  service call.
+  service call. The ring's band updates live while the slider moves.
 - **Accessibility:** the handle and steppers are keyboard-operable (arrow keys) and have labels.
 
 Drawing: [`assets/2026-11-17-thermostat-gauge.svg`](assets/2026-11-17-thermostat-gauge.svg).
