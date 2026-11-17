@@ -62,8 +62,8 @@
   <path class="rpipe" d="M274 206 H264 V184 H196 V174"/>
   <path class="rflow liquid" d="M274 206 H264 V184 H196 V174"/>
   <!-- refrigerant temperature after the heat exchanger (liquid line) -->
-  <text x="257" y="202" class="label" fill="#e65100" text-anchor="end">liquid</text>
-  <text x="257" y="217" class="small" fill="#e65100" text-anchor="end">17 °C</text>
+  <text x="244" y="204" class="label" fill="#e65100" text-anchor="end">liquid</text>
+  <text x="244" y="219" class="small" fill="#e65100" text-anchor="end">17 °C</text>
 
   <!-- expansion valve symbol (two triangles tip to tip) -->
   <g transform="translate(228 184)">
@@ -74,7 +74,7 @@
   <!-- evaporator: finned coil the air flows through, in front of the fan -->
   <rect x="188" y="82" width="16" height="92" rx="3" fill="#ede7f6" stroke="#7e57c2" stroke-width="2"/>
   <path d="M188 94 H204 M188 106 H204 M188 118 H204 M188 130 H204 M188 142 H204 M188 154 H204 M188 166 H204" stroke="#b39ddb" stroke-width="1.5"/>
-  <text x="196" y="226" class="label" text-anchor="middle">evap.</text>
+  <text x="196" y="246" class="label" text-anchor="middle">evap.</text>
 
   <!-- fan -->
   <circle cx="262" cy="128" r="42" fill="#ffffff" stroke="#90a4ae" stroke-width="2"/>
