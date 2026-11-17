@@ -1,7 +1,7 @@
 # Lovelace card
 
 - Issue: #10
-- Status: **draft**; depends on #12 (climate entity for the target)
+- Status: **approved** (2026-11-17); depends on #12 (climate entity for the target)
 - Date: 2026-11-17
 
 ## 1. Purpose
