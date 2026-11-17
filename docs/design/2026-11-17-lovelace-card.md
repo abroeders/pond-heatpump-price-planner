@@ -101,7 +101,7 @@ An inline SVG of the installation as a simple process diagram:
                     │   ┌─[ /\/\/\ ]─┐   │  heat exchanger
                     └───┼──── 17 °C ───┼───┘
      ┌──── P ───────────┘ water in     └ water out ──┐
-     │   pump                                        │
+     │  pump · running · 43 %                        │
      │ supply                                 return │
   ┌──┴────────────────────────────────────────────┴──┐
   │  ~~~~~~~~~~~~~~~  pond  14.6 °C  ~~~~~~~~~~~~~~~  │
@@ -122,7 +122,9 @@ An inline SVG of the installation as a simple process diagram:
 | Thermal power | value at the return pipe | the planner's `thermal_power` |
 | Mode | label (off/low/high) on the housing | the planner's `mode` |
 | **Fan animation** | the fan turns while the entity is on | `fan` (boolean, e.g. "fan active") |
-| **Water flow animation** | dashes move along the supply and return pipes in the flow direction, and the pump symbol is highlighted, while the entity is on | `flow` (boolean, e.g. "circulation active") |
+| **Water flow animation** | dashes move along the supply and return pipes in the flow direction while the entity is on | `flow` (boolean, e.g. "circulation active") |
+| **Pump state** | the pump symbol is **green** while running (`flow` on), **red** on a fault (`pump_fault` on, takes precedence), **grey** when off; the state is also written under the pump (running / fault / off) | `flow`, `pump_fault` (boolean) |
+| Pump speed | value under the pump, with the sensor's unit (% or rpm) | `pump_speed` (sensor) |
 | Compressor | glows while the entity is on | `compressor` (boolean) |
 
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
@@ -131,7 +133,9 @@ others are left for the user. On the reference installation:
 - `heat_exchanger`: `sensor.w_eau_heatpump_condensor_temperature`;
 - `fan`: `binary_sensor.w_eau_heatpump_fan_active`;
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
-- `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`.
+- `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`;
+- `pump_speed`: `sensor.circulatiepomp_1_toerental` or `…_2_toerental`, whichever feeds the heat pump;
+- `pump_fault`: a fault sensor of that pump, if there is one.
 
 **Animations.**
 - They are CSS animations: a rotating fan group, `stroke-dashoffset` along the pipe paths, a pulsing glow.
@@ -141,8 +145,9 @@ others are left for the user. On the reference installation:
   label.
 - The flow speed is fixed. It does not suggest a measured flow rate.
 
-A drawing of this layout, with the reference values and the animations, is in
-[`assets/2026-11-17-heatpump-illustration.svg`](assets/2026-11-17-heatpump-illustration.svg).
+Drawings with the reference values and the animations:
+- the whole illustration: [`assets/2026-11-17-heatpump-illustration.svg`](assets/2026-11-17-heatpump-illustration.svg);
+- the three pump states: [`assets/2026-11-17-pump-states.svg`](assets/2026-11-17-pump-states.svg).
 
 **Missing values** are left out of the drawing, with no empty labels. The drawing scales with the card
 width; the values stay readable at phone width (the labels move inside the drawing's bounding box rather than
@@ -279,6 +284,8 @@ heat_pump:                           # all optional; prefilled from the planner
   fan: binary_sensor.w_eau_heatpump_fan_active
   flow: binary_sensor.w_eau_heatpump_circulation_active
   compressor: binary_sensor.w_eau_heatpump_compressor_active
+  pump_speed: sensor.circulatiepomp_2_toerental
+  pump_fault: binary_sensor.circulation_pump_fault
 ```
 
 The editor uses Home Assistant's form elements (`ha-form`) with a device selector, a number selector, a
