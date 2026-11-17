@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 450" width="640" height="450" font-family="Roboto, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <style>
+    .bg { fill: #ffffff; }
+    .value { font-size: 15px; font-weight: 600; fill: #212121; }
+    .label { font-size: 11px; fill: #6b6b6b; }
+    .housing { fill: #eceff1; stroke: #90a4ae; stroke-width: 2; }
+    .pipe { fill: none; stroke: #90a4ae; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .flow { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 10 14; animation: flow 1.2s linear infinite; }
+    .cold { stroke: #42a5f5; }
+    .warm { stroke: #ff8a65; }
+    .air { fill: none; stroke: #b0bec5; stroke-width: 2; stroke-dasharray: 6 6; animation: flow 1.6s linear infinite; }
+    .fan { transform-origin: 250px 128px; animation: spin 0.9s linear infinite; }
+    .comp { fill: #ffb74d; animation: glow 1.8s ease-in-out infinite; }
+    .hx { fill: #fff3e0; stroke: #fb8c00; stroke-width: 2; }
+    .coil { fill: none; stroke: #fb8c00; stroke-width: 3; stroke-linejoin: round; animation: glow 1.8s ease-in-out infinite; }
+    .hxflow { fill: none; stroke-width: 3; stroke-dasharray: 8 10; animation: flow 1.2s linear infinite; }
+    .pumpbody { fill: #e3f2fd; stroke: #1e88e5; stroke-width: 2.5; }
+    .badge { fill: #1e88e5; }
+    @keyframes flow { to { stroke-dashoffset: -48; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes glow { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .flow, .air, .fan, .comp, .coil, .hxflow { animation: none; } }
+  </style>
+  <rect class="bg" width="640" height="450" rx="12"/>
+
+  <!-- air flow through the unit -->
+  <path class="air" d="M40 118 H160"/>
+  <path class="air" d="M40 138 H160"/>
+  <polygon points="160,112 172,128 160,144" fill="#b0bec5"/>
+  <text x="40" y="100" class="label">air in</text>
+  <text x="40" y="166" class="value">10.0 °C</text>
+  <path class="air" d="M472 118 H600"/>
+  <path class="air" d="M472 138 H600"/>
+  <polygon points="600,112 612,128 600,144" fill="#b0bec5"/>
+  <text x="520" y="100" class="label">air out</text>
+  <text x="520" y="166" class="value">6.0 °C</text>
+
+  <!-- heat pump housing -->
+  <rect class="housing" x="176" y="40" width="288" height="240" rx="14"/>
+  <text x="192" y="62" class="label">HEAT PUMP</text>
+
+  <!-- fan -->
+  <circle cx="250" cy="128" r="46" fill="#ffffff" stroke="#90a4ae" stroke-width="2"/>
+  <g class="fan">
+    <path d="M250 128 C250 101 266 87 278 92 C273 108 260 119 250 128 Z" fill="#78909c"/>
+    <path d="M250 128 C277 128 291 144 286 156 C270 151 259 138 250 128 Z" fill="#78909c"/>
+    <path d="M250 128 C250 155 234 169 222 164 C227 148 240 137 250 128 Z" fill="#78909c"/>
+    <path d="M250 128 C223 128 209 112 214 100 C230 105 241 118 250 128 Z" fill="#78909c"/>
+    <circle cx="250" cy="128" r="6" fill="#546e7a"/>
+  </g>
+
+  <!-- compressor -->
+  <rect x="318" y="78" width="48" height="62" rx="9" fill="#ffffff" stroke="#90a4ae" stroke-width="2"/>
+  <rect class="comp" x="325" y="85" width="34" height="48" rx="6"/>
+  <text x="342" y="156" class="label" text-anchor="middle">compressor</text>
+
+  <!-- mode badge and power -->
+  <rect class="badge" x="398" y="52" width="54" height="22" rx="11"/>
+  <text x="425" y="68" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">LOW</text>
+  <text x="386" y="104" class="label">power</text>
+  <text x="386" y="122" class="value">386 W</text>
+
+  <!-- heat exchanger (condenser): refrigerant coil heats the water that flows through it -->
+  <rect class="hx" x="252" y="190" width="136" height="54" rx="8"/>
+  <polyline class="coil" points="262,206 278,228 294,206 310,228 326,206 342,228 358,206 374,228"/>
+  <path class="hxflow cold" d="M230 236 H252"/>
+  <path class="hxflow warm" d="M388 236 H410"/>
+  <text x="320" y="186" class="label" text-anchor="middle">heat exchanger</text>
+  <text x="320" y="266" class="value" text-anchor="middle">17.0 °C</text>
+
+  <!-- supply: pond -> pump -> water in -> heat exchanger -->
+  <path class="pipe" d="M100 352 V312 H230 V236 H252"/>
+  <path class="flow cold" d="M100 352 V312 H230 V236 H252"/>
+  <!-- return: heat exchanger -> water out -> pond -->
+  <path class="pipe" d="M388 236 H410 V312 H540 V352"/>
+  <path class="flow warm" d="M388 236 H410 V312 H540 V352"/>
+  <polygon points="533,338 547,338 540,352" fill="#ff8a65"/>
+
+  <!-- water in / out values next to the pipes, below the housing -->
+  <text x="242" y="300" class="label">water in</text>
+  <text x="242" y="318" class="value">14.0 °C</text>
+  <text x="398" y="300" class="label" text-anchor="end">water out</text>
+  <text x="398" y="318" class="value" text-anchor="end">16.0 °C</text>
+  <text x="554" y="322" class="label">thermal</text>
+  <text x="554" y="340" class="value">2.85 kW</text>
+
+  <!-- circulation pump: centrifugal pump symbol (circle, triangle pointing in the flow direction) -->
+  <g transform="translate(160 312)">
+    <circle class="pumpbody" r="20"/>
+    <polygon points="-11,-15 -11,15 17,0" fill="#1e88e5"/>
+  </g>
+  <text x="160" y="346" class="label" text-anchor="middle">pump</text>
+
+  <!-- pond as a tub of water -->
+  <path d="M60 352 H580 V422 Q580 432 570 432 H70 Q60 432 60 422 Z" fill="#e3f2fd" stroke="#64b5f6" stroke-width="2"/>
+  <path d="M62 366 q20 -7 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t36 0 V430 H62 Z" fill="#90caf9" opacity=".8"/>
+  <text x="320" y="410" class="label" text-anchor="middle">pond</text>
+  <text x="320" y="394" font-size="22" font-weight="700" fill="#0d47a1" text-anchor="middle">14.6 °C</text>
+</svg>

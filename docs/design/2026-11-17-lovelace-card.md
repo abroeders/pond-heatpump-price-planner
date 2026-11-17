@@ -90,16 +90,19 @@ its own, so the integration stays the single source of truth.
 An inline SVG of the installation as a simple process diagram:
 - the pond, drawn as a tub of water, with the pond temperature shown in the water;
 - a supply pipe from the pond through a **circulation pump** to the heat pump's water inlet;
-- the air-to-water heat pump: housing, fan, compressor and heat exchanger;
+- the air-to-water heat pump: housing, fan, compressor and **heat exchanger** (condenser): the water from the
+  inlet flows through the heat exchanger, where the refrigerant coil heats it, and leaves through the outlet;
 - a return pipe from the heat pump's water outlet back to the pond.
 
 ```
         air in ──►  ┌──────────────────────┐  ──► air out
                     │  ( fan )   [comp]    │
-                    │  mode · power        │
-     ┌──── P ─────► │ water in   water out │ ─────┐
-     │   pump       └──────────────────────┘      │
-     │ supply                              return │
+                    │        mode · power  │
+                    │   ┌─[ /\/\/\ ]─┐   │  heat exchanger
+                    └───┼──── 17 °C ───┼───┘
+     ┌──── P ───────────┘ water in     └ water out ──┐
+     │   pump                                        │
+     │ supply                                 return │
   ┌──┴────────────────────────────────────────────┴──┐
   │  ~~~~~~~~~~~~~~~  pond  14.6 °C  ~~~~~~~~~~~~~~~  │
   └───────────────────────────────────────────────────┘
@@ -112,7 +115,8 @@ An inline SVG of the installation as a simple process diagram:
 | Element | Shown | Entity (editor) |
 |---|---|---|
 | Pond | water temperature in the tub | the planner's thermostat (`current_temperature`) |
-| Water in / water out | value at the heat pump's connections | `water_in`, `water_out` (temperature) |
+| Water in / water out | value at the supply and return pipes, below the housing | `water_in`, `water_out` (temperature) |
+| Heat exchanger | temperature below the heat exchanger; the coil glows while the compressor runs | `heat_exchanger` (temperature, e.g. the condenser temperature) |
 | Air in / air out | value at the air flow arrows | `air_in`, `air_out` (temperature) |
 | Electrical power | value on the housing | `power` |
 | Thermal power | value at the return pipe | the planner's `thermal_power` |
@@ -124,6 +128,7 @@ An inline SVG of the installation as a simple process diagram:
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
 others are left for the user. On the reference installation:
 - `air_out`: `sensor.w_eau_heatpump_air_outlet_temperature`;
+- `heat_exchanger`: `sensor.w_eau_heatpump_condensor_temperature`;
 - `fan`: `binary_sensor.w_eau_heatpump_fan_active`;
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
 - `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`.
@@ -135,6 +140,9 @@ others are left for the user. On the reference installation:
 - `prefers-reduced-motion: reduce` stops all animations; the on/off state then shows as a colour and a
   label.
 - The flow speed is fixed. It does not suggest a measured flow rate.
+
+A drawing of this layout, with the reference values and the animations, is in
+[`assets/2026-11-17-heatpump-illustration.svg`](assets/2026-11-17-heatpump-illustration.svg).
 
 **Missing values** are left out of the drawing, with no empty labels. The drawing scales with the card
 width; the values stay readable at phone width (the labels move inside the drawing's bounding box rather than
@@ -266,6 +274,7 @@ heat_pump:                           # all optional; prefilled from the planner
   water_out: sensor.w_eau_heatpump_water_outlet_temperature
   air_in: sensor.w_eau_heatpump_air_inlet_temperature
   air_out: sensor.w_eau_heatpump_air_outlet_temperature
+  heat_exchanger: sensor.w_eau_heatpump_condensor_temperature
   power: sensor.warmtepomp_vijver_power
   fan: binary_sensor.w_eau_heatpump_fan_active
   flow: binary_sensor.w_eau_heatpump_circulation_active
