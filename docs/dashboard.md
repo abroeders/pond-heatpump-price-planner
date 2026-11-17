@@ -6,6 +6,16 @@ The entity IDs below assume a planner named "Pond" that was added while Home Ass
 Check the real IDs on the device page, or in *Settings → Devices & services → Entities*, and replace them
 where needed.
 
+## Thermostat card
+
+```yaml
+type: thermostat
+entity: climate.pond_thermostat
+```
+
+Shows the pond temperature, the target and whether the heat pump is heating; the target can be changed
+with the dial.
+
 ## Entities card
 
 ```yaml
@@ -15,7 +25,7 @@ entities:
   - entity: sensor.pond_mode
     secondary_info: last-changed
   - entity: switch.pond_control_the_heat_pump
-  - entity: number.pond_target_temperature
+  - entity: climate.pond_thermostat
   - entity: number.pond_band
   - entity: sensor.pond_next_start
   - entity: sensor.pond_next_stop
@@ -58,14 +68,14 @@ series:
     type: line
     data_generator: |
       return entity.attributes.plan.map(q => [new Date(q.start).getTime(), q.temp]);
-  - entity: number.pond_target_temperature
+  - entity: climate.pond_thermostat
     name: Target
     yaxis_id: temp
     type: line
     stroke_dash: 4
     data_generator: |
       const plan = hass.states['sensor.pond_mode'].attributes.plan;
-      return plan.map(q => [new Date(q.start).getTime(), Number(entity.state)]);
+      return plan.map(q => [new Date(q.start).getTime(), entity.attributes.temperature]);
   - entity: sensor.pond_mode
     name: Mode
     yaxis_id: mode
@@ -91,7 +101,7 @@ title: Pond, last 3 days
 hours_to_show: 72
 entities:
   - entity: sensor.pond_temperature
-  - entity: number.pond_target_temperature
+  - entity: climate.pond_thermostat
   - entity: sensor.pond_mode
 ```
 

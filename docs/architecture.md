@@ -688,6 +688,13 @@ classDiagram
         +device_info
     }
     class PlannerSensor
+    class PondThermostat {
+        <<ClimateEntity>>
+        +current_temperature
+        +target_temperature
+        +hvac_action
+        +async_set_temperature(temperature)
+    }
     class SettingNumber
     class SettingSwitch
     class CopMethodSelect
@@ -697,6 +704,7 @@ classDiagram
     PlannerCoordinator o-- PlannerStore
     PlannerCoordinator o-- HeatPumpController
     PlannerEntity <|-- PlannerSensor
+    PlannerEntity <|-- PondThermostat
     PlannerEntity <|-- SettingNumber
     PlannerEntity <|-- SettingSwitch
     PlannerEntity <|-- CopMethodSelect
@@ -757,13 +765,13 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as user
-    participant N as number / switch / select
+    participant N as thermostat / number / switch / select
     participant Co as PlannerCoordinator
     participant St as PlannerStore
     U->>N: set value
     N->>Co: async_set_setting(key, value)
     Co->>St: set_setting (saved after 60 s)
-    alt target, band, cover or control
+    alt target (thermostat), band, cover or control
         Co->>Co: schedule_replan (2 s debounce)
     end
     alt volume, flow, COP method or cover

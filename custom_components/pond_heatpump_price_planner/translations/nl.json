@@ -129,6 +129,11 @@
     }
   },
   "entity": {
+    "climate": {
+      "thermostat": {
+        "name": "Thermostaat"
+      }
+    },
     "sensor": {
       "mode": {
         "name": "Stand",
@@ -188,9 +193,6 @@
       }
     },
     "number": {
-      "target": {
-        "name": "Streeftemperatuur"
-      },
       "band": {
         "name": "Band"
       },

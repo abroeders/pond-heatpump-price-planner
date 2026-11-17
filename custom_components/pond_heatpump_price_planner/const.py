@@ -87,6 +87,8 @@ DEFAULT_SETTINGS = {
     SET_COP_METHOD: "average",
 }
 
+TARGET_MIN, TARGET_MAX, TARGET_STEP = 5.0, 28.0, 0.1  # °C, climate entity
+
 LEARN_TIME = (3, 30)  # local time of the nightly learning
 TUNING_DAYS = 14
 PREDICTION_HOURS = 4
