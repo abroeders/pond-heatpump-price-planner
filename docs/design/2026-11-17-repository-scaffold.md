@@ -1,7 +1,7 @@
 # Repository scaffold
 
 - Issue: #1
-- Status: **draft**
+- Status: **approved** (2026-11-17)
 - Date: 2026-11-17
 
 ## 1. Purpose
