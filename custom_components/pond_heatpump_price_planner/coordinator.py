@@ -105,6 +105,8 @@ class PlannerData:
     measured_mode: str | None = None
     mismatch: bool = False
     price_status: str = "no_prices"
+    known_quarters: int = 0  # quarters of the plan with a known (not forecast) price
+    surplus: list[float] | None = None  # solar surplus per quarter (kW), when solar is configured
     pond: float | None = None
     cop: CopResult | None = None
     cop_flow: CopResult | None = None
@@ -360,6 +362,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 mismatch,
             )
             d.price_status, d.pond, d.surcharge = prices.status, pond, self._surcharge()
+            d.known_quarters, d.surplus = prices.known, surplus
             d.prediction_error = self.tracker.mean_abs_error()
             capacity = capacity_kwh_per_k(self.settings[SET_VOLUME])
             d.thermal_power_w = thermal_power_w(self.params, measured or "off", capacity)

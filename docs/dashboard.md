@@ -1,6 +1,7 @@
 # Dashboard examples
 
-Examples for showing the planner on a dashboard. A dedicated card is planned (issue #10).
+Examples with Home Assistant's standard cards. The integration also brings its own card: see
+[Lovelace card](card.md).
 
 The entity IDs below assume a planner named "Pond" that was added while Home Assistant was set to English.
 Check the real IDs on the device page, or in *Settings → Devices & services → Entities*, and replace them
