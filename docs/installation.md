@@ -66,6 +66,9 @@ steps. Only the first one is required; you can add the others later with *Reconf
 If a price sensor is refused ("no price list in a recognised format"), see
 [Troubleshooting](troubleshooting.md#price-sensor-not-recognised).
 
+**No dynamic tariff?** With a normal and an off-peak (day/night) tariff, make a price sensor yourself:
+see [Price sensor for a day/night tariff](fixed-tariff.md).
+
 ### Step 3: solar power (optional)
 
 | Field | Pick | Without it |

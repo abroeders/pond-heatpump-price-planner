@@ -53,6 +53,7 @@ The [installation guide](docs/installation.md) explains every step.
 |---|---|
 | [Installation guide](docs/installation.md) | step by step, including the switch-over from existing automations |
 | [Configuration](docs/configuration.md) | every link and option, and what leaving it out does |
+| [Price sensor for a day/night tariff](docs/fixed-tariff.md) | a template sensor for a normal and off-peak tariff, without a dynamic contract |
 | [Entities](docs/entities.md) | what every sensor, number, switch and attribute shows |
 | [How it works](docs/how-it-works.md) | model, learning, planning, safety, with formulas |
 | [COP, heat loss and thermal power](docs/cop.md) | both COP methods with formulas |
