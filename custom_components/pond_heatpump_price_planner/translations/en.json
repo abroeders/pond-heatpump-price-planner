@@ -1,0 +1,11 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Pond heat pump",
+        "description": "Set up a price planner for a pond heat pump.",
+        "data": { "name": "Name" }
+      }
+    }
+  }
+}
