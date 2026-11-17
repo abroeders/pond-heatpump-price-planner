@@ -17,15 +17,20 @@ Measured on the reference installation (pond with an inverter air-to-water heat 
 
 | Item | Value |
 |---|---|
-| Heating, low mode (~390 W) | 0.222 K/h per kW → +0.087 K/h |
-| Heating, high mode (~900 W) | 0.139 K/h per kW → +0.125 K/h |
-| Cooling coefficient `k` | 0.009 /h (time constant ~110 h) |
-| Constant offset `c` | −0.005 K/h |
+| Heating, low mode (~390 W) | 0.30 K/h per kW → +0.12 K/h |
+| Heating, high mode (~920 W) | 0.21 K/h per kW → +0.19 K/h |
+| Cooling coefficient `k` | 0.012 /h (time constant ~80 h) |
+| Constant offset `c` | −0.0115 K/h |
 | Start-up | first ~5 min at ~2/3 efficiency |
 | Prediction error, open loop | 4 h: 0.10 K, 12 h: 0.15 K, 24 h: 0.20 K (mean absolute) |
 
-Low mode delivers ~1.6× more heat per kWh than high mode. These values are the defaults until the
+Low mode delivers ~1.45× more heat per kWh than high mode. These values are the defaults until the
 installation has its own data.
+
+*Revised 2026-11-17 during implementation:* the first analysis regressed the 4-hour slope on the power of
+the middle hour only. That attenuates the gains by ~30 % (errors in variables). With power and temperature
+difference averaged over the same window as the slope (§5), the values above follow; the ratio low/high
+(1.45) now agrees with both COP methods of #8 (1.37–1.45). Earlier values: 0.222 / 0.139 / 0.009 / −0.005.
 
 ## 3. Model
 
@@ -38,10 +43,10 @@ T[t+1] = T[t] + Δt · ( g_m · s · P_m  −  k_c · (T[t] − T_out[t])  +  c 
 | Symbol | Meaning | Default |
 |---|---|---|
 | `P_m` | mean electrical power in mode m (kW) | off 0.005, low 0.39, high 0.90 |
-| `g_m` | heating gain per kW in mode m (K/h per kW) | off 0, low 0.222, high 0.139 |
+| `g_m` | heating gain per kW in mode m (K/h per kW) | off 0, low 0.30, high 0.21 |
 | `s` | start factor: 0.75 in the first quarter after off, else 1 | 0.75 |
-| `k_c` | cooling coefficient for cover state c (open/covered) | open 0.009, covered 0.6 · open |
-| `c` | constant offset (pumps, filters, evaporation, ground) | −0.005 |
+| `k_c` | cooling coefficient for cover state c (open/covered) | open 0.012, covered 0.6 · open |
+| `c` | constant offset (pumps, filters, evaporation, ground) | −0.01 |
 | `T_out` | outdoor temperature (forecast in the planner) | |
 
 The model is linear in its parameters, so learning is least squares. Solar gain and wind are not in the
@@ -109,6 +114,8 @@ aggregates of the samples, like the reference analysis:
 
 - hourly mean of `pond`, `outdoor`, low-mode power and high-mode power (power split by the thresholds);
 - slope `dT[h] = (T[h+2] − T[h−2]) / 4 h` (centred, reduces sensor quantisation);
+- power and `T − T_out` averaged over the same window as the slope (weights ⅛, ¼, ¼, ¼, ⅛ for hours
+  h−2 … h+2), so the regressors match the interval of the slope;
 - hours with gaps in the ±2 h window are skipped.
 
 ### 5.1 Slow fit: gains and offset
@@ -119,7 +126,7 @@ aggregates of the samples, like the reference analysis:
 - Result is accepted only within bounds (gain 0.02–1.0 K/h per kW, offset −0.05–+0.05 K/h) and blended:
   new = 0.7 · old + 0.3 · fit, so one odd month cannot move the model far.
 - A mode without enough hours keeps its previous gain. If high mode is rarely used, its gain stays at the
-  default ratio to low (0.63) until data exist.
+  default ratio to low (0.69) until data exist.
 - Mode powers `P_m`: median of the hourly power in that mode over the same window.
 
 ### 5.2 Fast fit: cooling coefficient
