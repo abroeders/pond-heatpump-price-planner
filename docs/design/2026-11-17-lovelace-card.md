@@ -110,7 +110,7 @@ An inline SVG of the installation as a simple process diagram:
                     │   ┌─[ /\/\/\ ]─┐   │  heat exchanger
                     └───┼──── 17 °C ───┼───┘
      ┌──── P ───────────┘ water in     └ water out ──┐
-     │  pump · running · 43 %                        │
+     │  pump · running · 43 % · 103 W                │
      │ supply                                 return │
   ┌──┴────────────────────────────────────────────┴──┐
   │  ~~~~~~~~~~~~~~~  pond  14.6 °C  ~~~~~~~~~~~~~~~  │
@@ -132,7 +132,7 @@ An inline SVG of the installation as a simple process diagram:
 | **Fan animation** | the fan turns while the entity is on | `fan` (boolean, e.g. "fan active") |
 | **Water flow animation** | dashes move along the supply and return pipes in the flow direction while the entity is on | `flow` (boolean, e.g. "circulation active") |
 | **Pump state** | the pump symbol is **green** while running (`flow` on), **red** on a fault (`pump_fault` on, takes precedence), **grey** when off; the state is also written under the pump (running / fault / off) | `flow`, `pump_fault` (boolean) |
-| Pump speed | value under the pump, with the sensor's unit (e.g. %) | `pump_speed` (sensor) |
+| Pump speed and power | under the pump, with the sensors' units (e.g. "43 % · 103 W") | `pump_speed`, `pump_power` (sensors) |
 | **Compressor animation** | the piston pumps up and down while the entity is on | `compressor` (boolean) |
 | **Refrigerant flow animation** | dashes move along the hot gas, liquid and suction lines while the compressor runs | `compressor` (boolean) |
 | Hot gas temperature | value at the hot gas line | `gas` (temperature, e.g. the gas outlet temperature) |
@@ -146,6 +146,7 @@ others are left for the user. On the reference installation:
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
 - `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`;
 - `pump_speed`: `sensor.circulatiepomp_2_toerental` (%);
+- `pump_power`: `sensor.circulatiepomp_2_power` (W);
 - `pump_fault`: a fault sensor of that pump, if there is one.
 
 **Animations.**
@@ -298,6 +299,7 @@ heat_pump:                           # all optional; prefilled from the planner
   flow: binary_sensor.w_eau_heatpump_circulation_active
   compressor: binary_sensor.w_eau_heatpump_compressor_active
   pump_speed: sensor.circulatiepomp_2_toerental
+  pump_power: sensor.circulatiepomp_2_power
   pump_fault: binary_sensor.circulation_pump_fault
 ```
 
