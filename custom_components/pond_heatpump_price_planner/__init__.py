@@ -7,12 +7,15 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
+from .const import DOMAIN
 from .coordinator import PlannerCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
+    Platform.CLIMATE,
     Platform.SENSOR,
     Platform.NUMBER,
     Platform.SWITCH,
@@ -25,6 +28,7 @@ type PlannerConfigEntry = ConfigEntry[PlannerCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> bool:
     """Set up a planner: load its store, start its timers and listeners, add the entities."""
+    _remove_replaced_entities(hass, entry)
     coordinator = PlannerCoordinator(hass, entry)
     try:
         await coordinator.async_start()
@@ -35,6 +39,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> b
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+def _remove_replaced_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """0.2.0: the target temperature number became the thermostat climate entity."""
+    registry = er.async_get(hass)
+    if entity_id := registry.async_get_entity_id(Platform.NUMBER, DOMAIN, f"{entry.entry_id}_target"):
+        registry.async_remove(entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> bool:

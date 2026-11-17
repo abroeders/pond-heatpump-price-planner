@@ -129,6 +129,11 @@
     }
   },
   "entity": {
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
+      }
+    },
     "sensor": {
       "mode": {
         "name": "Mode",
@@ -188,9 +193,6 @@
       }
     },
     "number": {
-      "target": {
-        "name": "Target temperature"
-      },
       "band": {
         "name": "Band"
       },
