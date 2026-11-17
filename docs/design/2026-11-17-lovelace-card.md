@@ -102,7 +102,7 @@ An inline SVG of the installation as a simple process diagram:
                     │   ┌─[ /\/\/\ ]─┐   │  heat exchanger
                     └───┼──── 17 °C ───┼───┘
      ┌──── P ───────────┘ water in     └ water out ──┐
-     │  pump · running · 43 %                        │
+     │  pump · running · 2450 rpm                    │
      │ supply                                 return │
   ┌──┴────────────────────────────────────────────┴──┐
   │  ~~~~~~~~~~~~~~~  pond  14.6 °C  ~~~~~~~~~~~~~~~  │
@@ -124,7 +124,7 @@ An inline SVG of the installation as a simple process diagram:
 | **Fan animation** | the fan turns while the entity is on | `fan` (boolean, e.g. "fan active") |
 | **Water flow animation** | dashes move along the supply and return pipes in the flow direction while the entity is on | `flow` (boolean, e.g. "circulation active") |
 | **Pump state** | the pump symbol is **green** while running (`flow` on), **red** on a fault (`pump_fault` on, takes precedence), **grey** when off; the state is also written under the pump (running / fault / off) | `flow`, `pump_fault` (boolean) |
-| Pump speed | value under the pump, with the sensor's unit (% or rpm) | `pump_speed` (sensor) |
+| Pump speed | value under the pump in rpm (the unit of the sensor is shown as is) | `pump_speed` (sensor, rpm) |
 | Compressor | glows while the entity is on | `compressor` (boolean) |
 
 **Defaults.** The editor prefills `water_in`, `water_out`, `air_in` and `power` from the planner's links. The
@@ -134,7 +134,7 @@ others are left for the user. On the reference installation:
 - `fan`: `binary_sensor.w_eau_heatpump_fan_active`;
 - `flow`: `binary_sensor.w_eau_heatpump_circulation_active`;
 - `compressor`: `binary_sensor.w_eau_heatpump_compressor_active`;
-- `pump_speed`: `sensor.circulatiepomp_1_toerental` or `…_2_toerental`, whichever feeds the heat pump;
+- `pump_speed`: the speed sensor (rpm) of the pump that feeds the heat pump;
 - `pump_fault`: a fault sensor of that pump, if there is one.
 
 **Animations.**
@@ -284,7 +284,7 @@ heat_pump:                           # all optional; prefilled from the planner
   fan: binary_sensor.w_eau_heatpump_fan_active
   flow: binary_sensor.w_eau_heatpump_circulation_active
   compressor: binary_sensor.w_eau_heatpump_compressor_active
-  pump_speed: sensor.circulatiepomp_2_toerental
+  pump_speed: sensor.heat_pump_circulation_pump_speed
   pump_fault: binary_sensor.circulation_pump_fault
 ```
 

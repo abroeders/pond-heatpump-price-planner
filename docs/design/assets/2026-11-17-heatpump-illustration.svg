@@ -95,7 +95,7 @@
     <polygon class="pumptri" points="-11,-15 -11,15 17,0"/>
   </g>
   <text x="160" y="348" class="label" text-anchor="middle">pump · running</text>
-  <text x="160" y="364" font-size="13" font-weight="600" fill="#212121" text-anchor="middle">43 %</text>
+  <text x="160" y="364" font-size="13" font-weight="600" fill="#212121" text-anchor="middle">2450 rpm</text>
 
 
   <!-- pond as a tub of water -->
