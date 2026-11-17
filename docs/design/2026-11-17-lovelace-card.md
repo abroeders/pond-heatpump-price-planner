@@ -1,7 +1,7 @@
 # Lovelace card
 
 - Issue: #10
-- Status: **draft**
+- Status: **draft**; depends on #12 (climate entity for the target)
 - Date: 2026-11-17
 
 ## 1. Purpose
@@ -48,14 +48,14 @@ filtered on the integration). The card finds its entities in `hass.entities` by 
 
 | Section | Source |
 |---|---|
-| Now | `mode` (state, `reason`, `measured_mode`, `would_set`, `control`), pond temperature (`measured`, see §6), `target`, `band`, `next_start`, `next_stop` |
-| Plan chart | `mode.plan` (per quarter: start, mode, temp, price; §6 adds `surplus` and `known`), `target`, `band` |
+| Now | the pond climate entity of #12 (current and target temperature, heating or idle), `mode` (state, `reason`, `measured_mode`, `would_set`, `control`), `band`, `next_start`, `next_stop` |
+| Plan chart | `mode.plan` (per quarter: start, mode, temp, price; §6 adds `surplus` and `known`), target from the climate entity, `band` |
 | Key figures | `planned_energy`, `planned_cost` (`expensive_share`, `starts`), `cop` (`method`), `heat_loss`, `thermal_power` |
-| Controls | `target`, `band` (number), `insulation_cover`, `control` (switch) |
+| Controls | target through the climate entity (`climate.set_temperature`), `band` (number), `insulation_cover`, `control` (switch) |
 | Model (collapsible) | `cooling_coefficient`, `heating_rate_low/high`, `prediction_error`, `model_status`, `cop.by_outdoor` |
 | Heat pump illustration | entities chosen in the editor (§5), prefilled from the planner's links |
 
-Controls call `number.set_value` and `switch.turn_on/off` on the existing entities. The card has no logic of
+Controls call `climate.set_temperature`, `number.set_value` and `switch.turn_on/off` on the existing entities. The card has no logic of
 its own, so the integration stays the single source of truth.
 
 ## 4. Layout
@@ -120,13 +120,12 @@ others are left for the user. On the reference installation:
 
 ## 6. Small additions to the integration
 
-The chart needs three things the integration does not publish yet:
+The chart needs two things the integration does not publish yet:
 
 | Addition | Where | Why |
 |---|---|---|
 | `known` per quarter in `plan` (true where the price is known, false where it comes from the forecast) | `sensor.mode` attribute | mark the known-prices boundary in the chart |
 | `surplus` per quarter in `plan` (kW, only when solar is configured) | `sensor.mode` attribute | mark solar quarters |
-| `measured` (current pond temperature) | `sensor.mode` attribute | the "now" section without a separate link to the pond sensor |
 
 These are attributes of an existing sensor. They are already excluded from the recorder, so the database does
 not grow.
@@ -223,7 +222,7 @@ sequenceDiagram
     Card->>VM: build(hass, config)
     VM-->>Card: CardViewModel (only when relevant entities changed)
     Card->>Card: render sections
-    Card->>Svc: number.set_value / switch.turn_on (controls)
+    Card->>Svc: climate.set_temperature / number.set_value / switch.turn_on (controls)
     Svc-->>HA: entity changes, planner replans
     HA-->>Card: new hass → rebuild view model
 ```
