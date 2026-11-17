@@ -51,7 +51,8 @@ filtered on the integration). The card finds its entities in `hass.entities` by 
 | Now | the pond climate entity of #12 (current and target temperature, heating or idle), `mode` (state, `reason`, `measured_mode`, `would_set`, `control`), `band`, `next_start`, `next_stop` |
 | Plan chart | `mode.plan` (per quarter: start, mode, temp, price; §6 adds `surplus` and `known`), target from the climate entity, `band` |
 | Key figures | `planned_energy`, `planned_cost` (`expensive_share`, `starts`), `cop` (`method`), `heat_loss`, `thermal_power` |
-| Controls | target through the climate entity (`climate.set_temperature`), `band` (number), `insulation_cover`, `control` (switch) |
+| Thermostat gauge (§4.1) | the thermostat (current and target temperature, HVAC action), `band`, `mode` (state, reason) |
+| Switches | `insulation_cover`, `control` |
 | Model (collapsible) | `cooling_coefficient`, `heating_rate_low/high`, `prediction_error`, `model_status`, `cop.by_outdoor` |
 | Heat pump illustration | entities chosen in the editor (§5), prefilled from the planner's links |
 
@@ -60,30 +61,59 @@ its own, so the integration stays the single source of truth.
 
 ## 4. Layout
 
+Top to bottom:
+
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ Pond  14.62 °C  ▸ target 14.5 ± 0.25     [LOW · plan]    │  now
+│        [heat pump illustration with live values]         │  1. §5
+├──────────────────────────────────────────────────────────┤
+│                 ╭──── thermostat gauge ────╮             │  2. §4.1
+│                 │   pond 14.6 °C           │             │
+│                 │   heating · low · in band│             │
+│                 │   target  − 14.5 °C +    │             │
+│                 │   band    − ±0.25 K +    │             │
+│                 ╰──────────────────────────╯             │
 │ next stop 03:15 · next start 11:00 · controlling ●       │
 ├──────────────────────────────────────────────────────────┤
-│  temperature + band ─────  price (step line)      │now   │  plan chart (24/36 h)
+│  temperature + band ─────  price (step line)      │now   │  3. plan chart (24/36 h)
 │  ▇▇▇░░░▇▇▇▇▇▇░░░░░░▇▇▇  mode bars (off/low/high)  │      │
 ├──────────────────────────────────────────────────────────┤
-│ € 2.31 / 24 h · 7.1 kWh · 6 % expensive · COP 5.4 (avg)  │  key figures
+│ € 2.31 / 24 h · 7.1 kWh · 6 % expensive · COP 5.4 (avg)  │  4. key figures
 │ heat loss 295 W/K · thermal power 2.85 kW                │
 ├──────────────────────────────────────────────────────────┤
-│        [heat pump illustration with live values]         │  §5
+│ insulation cover ○   control the heat pump ●             │  5. switches
 ├──────────────────────────────────────────────────────────┤
-│ target [14.5] band [0.25]  cover ○  control ●            │  controls
-├──────────────────────────────────────────────────────────┤
-│ ▸ Model                                                   │  collapsible
+│ ▸ Model                                                   │  6. collapsible
 └──────────────────────────────────────────────────────────┘
 ```
 
-- **Responsive:** the card is one column at phone width. From a wide dashboard column the key figures and
-  controls sit side by side.
-- **Sections:** each one can be hidden in the editor.
+- **Responsive:** one column at phone width. In a wide dashboard column the gauge sits next to the
+  next-start/stop and key-figure lines.
+- **Sections:** each one can be hidden or moved in the editor; this is the default order.
 - **Unconfigured parts:** a section whose entities are unavailable is hidden (e.g. COP without a pond
   volume), rather than showing errors.
+
+### 4.1 Thermostat gauge
+
+A ring like Home Assistant's thermostat card, made for a narrow band:
+
+| Part | What it shows | How to use it |
+|---|---|---|
+| Ring | a **zoomed window of target ± 3 K** with a scale every 1 K outside the ring. The full 5–28 °C range would make a band of ±0.25 K only a few degrees of arc wide. | – |
+| Band | the coloured part of the ring from target − band to target + band (green) | – |
+| Target handle | a circle on the ring at the target | drag along the ring; steps of 0.1 °C; the window follows after release |
+| Pond marker | a triangle on the inside of the ring at the measured pond temperature | – |
+| Centre | the pond temperature (large); below it the HVAC action, the mode and whether the pond is in the band ("heating · low · in band", "idle · off · above band") | – |
+| Target stepper | − / value / + | 0.1 °C per press, 5–28 °C, sets the thermostat (`climate.set_temperature`) |
+| Band stepper | − / value / + | 0.05 K per press, 0.1–1.0 K, sets the band number (`number.set_value`) |
+
+- **Colours:** band green; above the band orange, below the band blue for the status text; target handle in
+  the primary colour; pond marker dark blue. All as theme variables, so dark mode works.
+- **Less traffic:** a change is sent 1 s after the last press or drag, so quick presses become one
+  service call.
+- **Accessibility:** the handle and steppers are keyboard-operable (arrow keys) and have labels.
+
+Drawing: [`assets/2026-11-17-thermostat-gauge.svg`](assets/2026-11-17-thermostat-gauge.svg).
 
 ## 5. Heat pump illustration
 
@@ -225,12 +255,15 @@ classDiagram
         +heatPump HeatPumpModel
         +model ModelSectionModel
     }
-    class NowSection
+    class ThermostatGauge {
+        +ring window target ± 3 K
+        +band arc, target handle, pond marker
+    }
     class PlanChart {
         +scales(plan, width, height) ChartScales
     }
     class FiguresSection
-    class ControlsSection
+    class SwitchesSection
     class HeatPumpIllustration {
         +pond, pump, heat pump, pipes
     }
@@ -241,10 +274,10 @@ classDiagram
     PondHeatpumpPlannerCard ..> ViewModelBuilder : on hass change
     ViewModelBuilder ..> EntityResolver
     ViewModelBuilder ..> CardViewModel : creates
-    PondHeatpumpPlannerCard o-- NowSection
+    PondHeatpumpPlannerCard o-- ThermostatGauge
     PondHeatpumpPlannerCard o-- PlanChart
     PondHeatpumpPlannerCard o-- FiguresSection
-    PondHeatpumpPlannerCard o-- ControlsSection
+    PondHeatpumpPlannerCard o-- SwitchesSection
     PondHeatpumpPlannerCard o-- HeatPumpIllustration
     PondHeatpumpPlannerCard o-- ModelSection
     PondHeatpumpPlannerCard ..> Localizer
@@ -286,7 +319,7 @@ This keeps a busy dashboard cheap.
 type: custom:pond-heatpump-planner-card
 device_id: 0123456789abcdef          # the planner device (editor: device picker)
 hours: 36                            # 24 or 36
-sections: [now, plan, figures, heat_pump, controls, model]   # order and visibility
+sections: [heat_pump, thermostat, plan, figures, switches, model]   # order and visibility
 heat_pump:                           # all optional; prefilled from the planner
   water_in: sensor.w_eau_heatpump_water_inlet_temperature
   water_out: sensor.w_eau_heatpump_water_outlet_temperature
