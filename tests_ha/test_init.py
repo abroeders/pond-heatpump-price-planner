@@ -45,6 +45,8 @@ async def test_control_on_sends_the_setpoint(hass: HomeAssistant, pond_states) -
     entry = await setup(hass)
     calls = async_mock_service(hass, "climate", "set_temperature")  # after setup: loading climate replaces it
     hass.data["_entry_id"] = entry.entry_id
+    # a setpoint that fits no mode, so the planner always sends one (13 = off would be "unchanged" at night)
+    hass.states.async_set(CLIMATE, "heat", {**hass.states.get(CLIMATE).attributes, "temperature": 20})
     switch = state(hass, "switch", "control")
     await hass.services.async_call("switch", "turn_on", {"entity_id": switch.entity_id}, blocking=True)
     await entry.runtime_data.async_replan()
