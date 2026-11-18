@@ -22,6 +22,7 @@ from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_change,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
@@ -33,6 +34,8 @@ from .const import (
     CONF_OUTLET,
     CONF_POND,
     CONF_POWER,
+    CONF_PRICE,
+    CONF_PRICE_FORECAST,
     DEFAULT_OPTIONS,
     DOMAIN,
     LEARN_TIME,
@@ -93,6 +96,14 @@ from .inputs import InputReader
 from .storage import PlannerStore
 
 _LOGGER = logging.getLogger(__name__)
+
+REPLAN_SOURCES = (CONF_POND, CONF_CLIMATE, CONF_PRICE, CONF_PRICE_FORECAST)
+MISSING = (STATE_UNAVAILABLE, STATE_UNKNOWN)
+
+
+def _became_available(event: Event[EventStateChangedData]) -> bool:
+    old, new = event.data.get("old_state"), event.data.get("new_state")
+    return new is not None and new.state not in MISSING and (old is None or old.state in MISSING)
 
 
 @dataclass
@@ -190,7 +201,15 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             self.flow.update(now, power=power)
         watched = [
             self.links.get(k)
-            for k in (CONF_POWER, CONF_INLET, CONF_OUTLET, CONF_ENERGY, CONF_OUTDOOR, CONF_AIR_INLET)
+            for k in (
+                CONF_POWER,
+                CONF_INLET,
+                CONF_OUTLET,
+                CONF_ENERGY,
+                CONF_OUTDOOR,
+                CONF_AIR_INLET,
+                *REPLAN_SOURCES,
+            )
         ]
         self._unsubs += [
             async_track_state_change_event(self.hass, [e for e in watched if e], self._on_state),
@@ -203,6 +222,11 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         await self.hass.async_add_executor_job(self._update_cop, now)
         if self.params.learned_at is None and len(self.store.samples) >= 96 * 14:
             self.hass.async_create_task(self.async_learn())
+        await self.async_replan()
+        # the linked sensors may not exist yet while Home Assistant starts: plan again once it has started
+        self._unsubs.append(async_at_started(self.hass, self._on_started))
+
+    async def _on_started(self, _hass: HomeAssistant) -> None:
         await self.async_replan()
 
     async def async_stop(self) -> None:
@@ -229,6 +253,8 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             value = None
         t = time.time()
         entity_id = event.data["entity_id"]
+        if entity_id in {self.links.get(k) for k in REPLAN_SOURCES} and _became_available(event):
+            self.schedule_replan()  # a source came back: do not wait for the next quarter
         if entity_id == self.links.get(CONF_POWER):
             self.power.add(t, value)
             if value is not None:

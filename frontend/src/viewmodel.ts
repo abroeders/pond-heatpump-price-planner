@@ -88,6 +88,8 @@ export interface CardViewModel {
   illustration: IllustrationModel | null;
   gauge: GaugeModel | null;
   plan: PlanModel | null;
+  /** why there is no plan (the mode sensor's reason), when the planner has none */
+  planMissing: string | null;
   figures: FiguresModel | null;
   switches: { cover: SwitchModel | null; control: SwitchModel | null } | null;
   model: ModelSectionModel | null;
@@ -148,6 +150,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     illustration: null,
     gauge: null,
     plan: null,
+    planMissing: null,
     figures: null,
     switches: null,
     model: null,
@@ -258,11 +261,14 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     copByOutdoor: Object.entries(outdoor).map(([k, v]) => [k, v === null ? null : Number(v).toFixed(1)]),
   };
 
+  const planMissing = plan ? null : available(mode) ? String(mode.attributes.reason ?? "no_plan") : "unavailable";
+
   return {
     ...empty,
     illustration,
     gauge,
     plan,
+    planMissing,
     figures,
     switches: { cover: sw("insulation_cover"), control: sw("control") },
     model,

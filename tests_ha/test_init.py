@@ -73,6 +73,25 @@ async def test_thermostat_sets_target_and_shows_heating(hass: HomeAssistant, pon
     assert state(hass, "climate", "thermostat").state == "heat"
 
 
+async def test_plans_as_soon_as_the_pond_sensor_appears(hass: HomeAssistant, pond_states) -> None:
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    from .conftest import POND
+
+    hass.states.async_set(POND, "unavailable")
+    entry = await setup(hass)
+    coordinator = entry.runtime_data
+    assert coordinator.data.plan is None and coordinator.data.decision.reason == "no_pond_temperature"
+    hass.states.async_set(POND, "14.8", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))  # past the 2 s debounce
+    await hass.async_block_till_done()
+    assert coordinator.data.plan is not None
+    assert coordinator.data.decision.reason != "no_pond_temperature"
+
+
 async def test_band_is_in_celsius(hass: HomeAssistant, pond_states) -> None:
     entry = await setup(hass)
     hass.data["_entry_id"] = entry.entry_id

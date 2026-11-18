@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A plan is made again as soon as Home Assistant has started and whenever the pond, price or heat pump
+  entity becomes available; before, there was no plan for up to 15 minutes after a restart (#20).
+- The pond temperature only counts as missing when the sensor is unavailable or quiet for more than 6 hours;
+  sensors that only report changes were treated as missing after 30 minutes (#20).
+- The thermostat uses the native climate properties of Home Assistant 2026.11, without deprecation warnings
+  (#20).
+
+### Changed
+
+- The card explains why there is no plan instead of hiding the chart (#20).
+
 ## [0.3.1] - 2026-11-18
 
 ### Added
