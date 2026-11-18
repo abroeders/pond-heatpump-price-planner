@@ -35,10 +35,34 @@ async def test_setup_creates_entities_and_plans_in_dry_run(hass: HomeAssistant, 
     assert mode.attributes["control"] is False
     assert mode.attributes["would_set"] is not None
     assert len(mode.attributes["plan"]) > 0
+    assert isinstance(mode.attributes["pond_history"], list)
     assert state(hass, "climate", "thermostat").attributes["temperature"] == 15.0
     assert state(hass, "switch", "control").state == "off"
     assert state(hass, "select", "cop_method").state == "average"
     assert not calls  # dry run: nothing is sent
+
+
+async def test_mode_sensor_publishes_the_pond_history(hass: HomeAssistant, pond_states) -> None:
+    import time
+
+    from custom_components.pond_heatpump_price_planner.core.samples import Sample
+
+    entry = await setup(hass)
+    hass.data["_entry_id"] = entry.entry_id
+    coordinator = entry.runtime_data
+    now = time.time() // 900 * 900
+    coordinator.store.replace_samples(
+        sorted(
+            [Sample(t=now - 30 * 3600, pond=13.0, outdoor=5, power=0)]
+            + [Sample(t=now - 900 * i, pond=14.0 + i / 100, outdoor=5, power=0) for i in range(1, 5)]
+            + [Sample(t=now - 1800 - 1, pond=None, outdoor=5, power=0)],
+            key=lambda x: x.t,
+        )
+    )
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    history = state(hass, "sensor", "mode").attributes["pond_history"]
+    assert [p["temp"] for p in history] == [14.04, 14.03, 14.02, 14.01]  # older than 24 h and gaps left out
 
 
 async def test_control_on_sends_the_setpoint(hass: HomeAssistant, pond_states) -> None:

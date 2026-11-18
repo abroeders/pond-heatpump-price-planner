@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The card explains why there is no plan instead of hiding the chart (#20).
+- The card shows the pond temperature of the last 24 hours in the thermostat, a "Plan:" title, and the date
+  at every midnight in the plan with vertical lines every 6 hours in local time (#21).
+- "Planned energy" is now called "planned electricity": it is electrical energy, not heat (#21).
+
+### Added
+
+- Attribute `pond_history` on the mode sensor (#21).
 
 ## [0.3.1] - 2026-11-18
 

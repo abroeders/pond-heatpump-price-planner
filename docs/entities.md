@@ -30,10 +30,10 @@ The settings are stored by the integration and survive a restart.
 
 | Key | Unit | Meaning | Attributes |
 |---|---|---|---|
-| `mode` | `off`, `low`, `high` | the mode applied (or, in dry run, that would be applied) now | `reason`, `plan_mode`, `measured_mode`, `control`, `would_set`, `apply_result`, `mismatch`, `price_status`, `horizon_end`, `plan` |
+| `mode` | `off`, `low`, `high` | the mode applied (or, in dry run, that would be applied) now | `reason`, `plan_mode`, `measured_mode`, `control`, `would_set`, `apply_result`, `mismatch`, `price_status`, `horizon_end`, `plan`, `pond_history` |
 | `next_start` | timestamp | next quarter in which the plan switches the heat pump on | – |
 | `next_stop` | timestamp | next quarter in which the plan switches it off | – |
-| `planned_energy` | kWh | planned electricity for the next 24 h | – |
+| `planned_energy` | kWh | planned electricity (not heat) for the next 24 h | – |
 | `planned_cost` | € | planned cost for the next 24 h (real prices) | `expensive_share`, `starts` |
 | `predicted_temperature` | °C | predicted pond temperature in 4 h | – |
 
@@ -45,7 +45,7 @@ The settings are stored by the integration and survive a restart.
 | `below_band` | the pond is below the band: at least low |
 | `far_below_band` | more than 0.3 K below the band: high (or low if high is not allowed) |
 | `above_band` | above the band: off |
-| `no_pond_temperature` | no pond temperature for 30 min: low |
+| `no_pond_temperature` | the pond sensor is unavailable, or has not reported for 6 h: low |
 | `no_plan` | no plan could be made: simple thermostat |
 
 **`apply_result`**: `sent`, `unchanged`, `dry_run`, `heat_pump_off` (the heat pump itself is switched off),
@@ -54,6 +54,9 @@ The settings are stored by the integration and survive a restart.
 **`plan`**: one entry per quarter with `start`, `mode`, `temp` (predicted pond temperature at the end of the
 quarter), `price` (effective €/kWh), `known` (false where the price comes from the price forecast) and, with
 solar configured, `surplus` (kW). It is not stored in the recorder.
+
+**`pond_history`**: the pond temperature of the last 24 h, one entry per quarter with `time` (end of the
+quarter) and `temp`. The card draws it in the thermostat. It is not stored in the recorder.
 
 **`price_status`**:
 

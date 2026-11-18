@@ -104,7 +104,7 @@ export class PondHeatpumpPlannerCard extends LitElement {
               ${nextLine(vm.gauge, t, language)}`
           : nothing;
       case "plan":
-        if (vm.plan) return html`${planChart(vm.plan, t, language, chartWidth(this._layout))}${planLegend(vm.plan, t)}`;
+        if (vm.plan) return html`<div class="title">${t("plan_title")}</div>${planChart(vm.plan, t, language, chartWidth(this._layout))}${planLegend(vm.plan, t)}`;
         if (vm.planMissing === null) return nothing;
         return html`<div class="no-plan"><strong>${t("no_plan_yet")}</strong> · ${this.reasonText(vm.planMissing)}</div>`;
       case "figures":
@@ -166,6 +166,7 @@ export class PondHeatpumpPlannerCard extends LitElement {
       .section.side .part + .part { margin-top: 12px; }
       ha-card.medium .section.side, ha-card.wide .section.side { display: flex; flex-direction: column; justify-content: center; }
       .warning { color: var(--warning-color, #ef6c00); }
+      .title { font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px; }
       .no-plan { color: var(--secondary-text-color); font-size: 14px; padding: 12px 0; text-align: center; }
     `,
   ];
