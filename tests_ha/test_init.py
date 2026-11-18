@@ -86,6 +86,8 @@ async def test_plans_as_soon_as_the_pond_sensor_appears(hass: HomeAssistant, pon
     coordinator = entry.runtime_data
     assert coordinator.data.plan is None and coordinator.data.decision.reason == "no_pond_temperature"
     hass.states.async_set(POND, "14.8", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    await hass.async_block_till_done()  # let the state listener schedule the replan
+    assert coordinator._replan_handle is not None
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))  # past the 2 s debounce
     await hass.async_block_till_done()
     assert coordinator.data.plan is not None
