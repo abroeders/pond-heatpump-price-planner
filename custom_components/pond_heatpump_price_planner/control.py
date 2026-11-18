@@ -60,7 +60,9 @@ class HeatPumpController:
             return None
         return state
 
-    def setpoint_for(self, decision: Decision, inlet: float | None, pond: float) -> float | None:
+    def setpoint_for(
+        self, decision: Decision, inlet: float | None, pond: float, running: bool = True
+    ) -> float | None:
         state = self._climate()
         if state is None:
             return None
@@ -72,15 +74,22 @@ class HeatPumpController:
             float(attrs.get(ATTR_MIN_TEMP, 7)),
             float(attrs.get(ATTR_MAX_TEMP, 35)),
             float(attrs.get(ATTR_TARGET_TEMP_STEP) or 1),
+            running,
         )
 
     async def async_apply(
-        self, decision: Decision, inlet: float | None, pond: float, control: bool, now: float
+        self,
+        decision: Decision,
+        inlet: float | None,
+        pond: float,
+        control: bool,
+        now: float,
+        running: bool = True,
     ) -> ApplyResult:
         state = self._climate()
         if state is None:
             return ApplyResult(None, False, "unavailable")
-        setpoint = self.setpoint_for(decision, inlet, pond)
+        setpoint = self.setpoint_for(decision, inlet, pond, running)
         if not control:
             return ApplyResult(setpoint, False, "dry_run")
         if state.state == HVACMode.OFF:

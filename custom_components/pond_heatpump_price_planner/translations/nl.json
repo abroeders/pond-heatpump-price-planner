@@ -102,6 +102,7 @@
           "offset_off": "Setpoint-offset uit",
           "offset_low": "Setpoint-offset laag",
           "offset_high": "Setpoint-offset hoog",
+          "offset_start": "Setpoint-offset om te starten",
           "low_w": "Vermogensgrens uit/laag",
           "high_w": "Vermogensgrens laag/hoog",
           "cop_window": "COP-venster",
@@ -114,7 +115,8 @@
           "start_penalty": "Hoger: minder starts tegen iets hogere kosten.",
           "margin": "Het plan blijft zo ver binnen de band om voorspelfouten op te vangen.",
           "surcharge_auto": "Elke nacht worden de laatste 14 dagen opnieuw afgespeeld en wordt de toeslag met de laagste echte kosten gekozen.",
-          "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand."
+          "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand.",
+          "offset_start": "Voor laag en hoog zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt."
         }
       }
     }
