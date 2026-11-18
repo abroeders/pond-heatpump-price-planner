@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Documentation: a template price sensor for a normal and off-peak (day/night) tariff, tested against
-  Home Assistant's template engine, including the clock change days (#15).
+- Documentation: a template price sensor for a normal and off-peak (day/night) tariff following the Dutch
+  rules (off-peak 23:00–7:00 on weekdays, weekends and recognised holidays all day, holidays calculated per
+  year), tested against Home Assistant's template engine (#15).
 
 ## [0.2.0] - 2026-11-17
 
