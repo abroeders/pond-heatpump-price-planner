@@ -10,7 +10,8 @@ to set it up and one week of dry run before you let it control the heat pump.
 - Home Assistant 2026.3 or later.
 - HACS installed.
 - An air-to-water heat pump that Home Assistant can control through a `climate` entity whose setpoint
-  you can change.
+  you can change. The planner is in use with a W'eau pond heat pump; the default setpoint offsets are
+  measured on it.
 
 **Checklist of sensors.** Find these entities in *Developer tools → States* before you start:
 

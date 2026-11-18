@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.1] - 2026-11-18
 
+### Changed
+
+- The documentation names the heat pump the planner is in use with (a W'eau pond heat pump) and where the
+  default offsets come from.
+
 ### Fixed
 
 - A stopped heat pump is started with a higher setpoint: new option `offset_start` (default +2 K) for low and

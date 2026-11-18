@@ -82,8 +82,8 @@ Saving the options restarts the planner. The learned model and the stored data a
 
 ### Finding the setpoint offsets for another heat pump
 
-The defaults come from a heat pump that holds its water inlet at its setpoint with a whole-degree
-thermostat. To check yours:
+The defaults come from the heat pump the planner is in use with: a W'eau pond heat pump, which holds its
+water inlet at its setpoint with a whole-degree thermostat. To check yours:
 1. Set the heat pump's setpoint to the inlet temperature, then 1 K above it, then 2 K below it, with 30
    minutes between each step.
 2. Note the power at each step.
