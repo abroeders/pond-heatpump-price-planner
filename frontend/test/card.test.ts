@@ -12,6 +12,11 @@ async function mount(hass = fakeHass(), extra: Record<string, unknown> = {}) {
   return card;
 }
 
+/** jsdom has no PointerEvent: a MouseEvent with the pointer type is enough for the card. */
+function pointer(type: string, clientX: number): Event {
+  return Object.assign(new MouseEvent(type, { clientX, bubbles: true }), { pointerType: "mouse" });
+}
+
 afterEach(() => {
   document.body.innerHTML = "";
   vi.useRealTimers();
@@ -102,6 +107,7 @@ describe("card", () => {
   });
 
   it("shows the 24-hour history in the gauge, the plan title and the dates", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.parse("2026-11-17T10:05:00Z") });
     const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "plan", plan: plan(144), pond_history: pondHistory() }, last_updated: "z" } }));
     const gauge = card.shadowRoot.querySelector("phpc-gauge");
     await gauge.updateComplete;
@@ -109,6 +115,30 @@ describe("card", () => {
     expect(card.shadowRoot.querySelector(".plan .title").textContent).toBe("Plan:");
     expect(card.shadowRoot.querySelectorAll(".chart .day-label").length).toBeGreaterThan(0);
     expect(card.shadowRoot.querySelectorAll(".chart line.grid").length).toBeGreaterThan(0);
+  });
+
+  it("shows a hairline and a tooltip under the pointer and with the keyboard", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.parse("2026-11-17T10:05:00Z") });
+    const card = await mount();
+    const chart = card.shadowRoot.querySelector("phpc-plan-chart");
+    const plot = chart.querySelector(".plot");
+    plot.getBoundingClientRect = () => ({ left: 0, top: 0, width: 600, height: 220, right: 600, bottom: 220 });
+    expect(chart.querySelector(".chart path.measured")).not.toBeNull();
+    expect(chart.querySelector(".chart path.temp")).not.toBeNull();
+    plot.dispatchEvent(pointer("pointermove", 571));
+    await chart.updateComplete;
+    expect(chart.querySelector(".hair")).not.toBeNull();
+    expect(chart.querySelector(".tooltip").textContent).toContain("predicted");
+    expect(chart.querySelector(".tooltip").textContent).toContain("mode: off");
+    plot.dispatchEvent(pointer("pointerleave", 0));
+    await chart.updateComplete;
+    expect(chart.querySelector(".tooltip")).toBeNull();
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await chart.updateComplete;
+    expect(chart.querySelector(".hair")).not.toBeNull();
+    plot.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await chart.updateComplete;
+    expect(chart.querySelector(".hair")).toBeNull();
   });
 
   it("leaves the history out without data", async () => {

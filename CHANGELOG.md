@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The plan chart shows the measured pond temperature up to now (solid) and the prediction from now
+  (dashed) (#22).
+- A hairline with a tooltip in the plan chart: time, temperature, mode, price, expensive quarter and solar
+  surplus of the quarter under the pointer; also with the keyboard (#22).
+
+### Changed
+
+- The plan chart always spans `hours`: it ends where the known prices end and starts `hours` before that
+  (#22).
+- `pond_history` covers 48 hours instead of 24 (#22).
+
 ## [0.4.0] - 2026-11-18
 
 ### Added

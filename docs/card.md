@@ -45,13 +45,35 @@ The card adapts its layout to its own width:
 |---|---|
 | Heat pump | The drawing below, with live values and animations |
 | Thermostat | Ring with the pond temperature (triangle), the target (handle, drag it) and the band (green); target − / + and a vertical slider for the band (in °C); next start/stop and whether the planner controls the heat pump |
-| Plan | 24, 36 or 48 hours: predicted pond temperature (line) with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted); a legend below the chart explains each element |
+| Plan | 24, 36 or 48 hours, ending where the known prices end (see below): measured pond temperature up to now (solid line), predicted pond temperature from now (dashed line), with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted); a legend below the chart explains each element |
 | Figures | Planned cost and energy for 24 h, share in expensive quarters, COP (method), heat loss, thermal power |
 | Switches | Insulation cover, control the heat pump |
 | Model | Collapsible: cooling coefficient, heating rates, prediction error, last learned, COP by outdoor temperature |
 
 Changes to the target and the band are sent one second after the last change, so quick presses become one
 update.
+
+### The plan chart
+
+The right side of the chart is where the plan ends: the last known price (or the last forecast price, with a
+price forecast sensor). The left side is that moment minus `hours`. Between the left side and now the chart
+shows the measured pond temperature; from now on the plan.
+
+| Time | Prices known until | Chart (`hours: 36`) | Measured | Plan |
+|---|---|---|---|---|
+| 09:00 | today 24:00 | yesterday 12:00 – today 24:00 | 21 h | 15 h |
+| 14:00 (after the day-ahead prices) | tomorrow 24:00 | today 12:00 – tomorrow 24:00 | 2 h | 34 h |
+
+When the plan is longer than `hours`, the chart shows now … now + `hours`.
+
+Point at the chart (or touch it on a phone) for a hairline with the values of that quarter: day and time,
+pond temperature (measured or predicted), mode, price (with "forecast" for forecast prices), and whether it is
+an expensive quarter or has solar surplus. With the keyboard: focus the chart (Tab), then ← and → move one
+quarter, Home and End jump to the start and end, Escape hides the hairline.
+
+![Hairline with tooltip](images/card-tooltip.png)
+
+The thermostat shows a small chart of the measured pond temperature of the last 24 hours.
 
 ### The drawing
 
@@ -79,7 +101,7 @@ All options can be set in the visual editor.
 ```yaml
 type: custom:pond-heatpump-planner-card
 device_id: 0123456789abcdef   # the planner device
-hours: 36                     # 24, 36 or 48 hours in the plan chart
+hours: 36                     # width of the plan chart: 24, 36 or 48 hours, ending at the last known price
 sections: [heat_pump, thermostat, plan, figures, switches, model]   # order and visibility
 heat_pump:                    # entities of the drawing, all optional
   water_in: sensor.heat_pump_water_inlet_temperature
