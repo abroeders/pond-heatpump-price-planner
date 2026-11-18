@@ -3,6 +3,14 @@
 The integration ships its own dashboard card. It shows the heat pump as an animated drawing, a thermostat
 with the band, the plan and the key figures, and lets you change the target, the band and the switches.
 
+![The card, three columns wide](images/card-wide.png)
+
+| One column, light theme | One column, dark theme |
+|---|---|
+| ![light](images/card-light.png) | ![dark](images/card-dark.png) |
+
+The screenshots are made from the real card with example data (`python scripts/screenshot_card.py`).
+
 ## Adding the card
 
 The card is loaded automatically with the integration; there is no separate download and no dashboard
