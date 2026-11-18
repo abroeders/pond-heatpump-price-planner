@@ -26,6 +26,11 @@ built and tested for a pond.
 No. It uses the price you configure. If your battery covers expensive hours anyway, the price differences
 the heat pump sees are smaller, and the advantage of low power counts even more.
 
+**I do not have a dynamic tariff. Can I use it?**
+Yes. With a normal and an off-peak tariff, a small template sensor publishes both prices; see
+[Price sensor for a day/night tariff](fixed-tariff.md). The planner then heats as much as possible in the
+off-peak hours. Without any price sensor it still saves by running at low power.
+
 **What happens with net metering?**
 With the default feed-in settings, own solar power is worth as much as bought power, and solar does not
 change the plan. Once net metering ends, set the feed-in options to what an exported kWh is worth.

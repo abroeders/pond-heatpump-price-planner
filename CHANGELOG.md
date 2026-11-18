@@ -8,12 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Plan chart of the card: 48 hours option and a legend below the chart (#14).
 - The card is resizable in sections dashboards and adapts its layout to its width: one, two or three
   columns (#16).
-
-### Added
-
-- Plan chart of the card: 48 hours option and a legend below the chart (#14).
+- Documentation: a template price sensor for a normal and off-peak (day/night) tariff following the Dutch
+  rules (off-peak 23:00–7:00 on weekdays, weekends and recognised holidays all day, holidays calculated per
+  year), tested against Home Assistant's template engine (#15).
 
 ### Changed
 
