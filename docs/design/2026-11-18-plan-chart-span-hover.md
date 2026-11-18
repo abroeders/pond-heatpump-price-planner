@@ -18,25 +18,45 @@ This design gives the chart:
 
 ## 2. Time window
 
+The right side is where the prices end; the left side is that moment minus the span.
+
 | Card option | Default | Range | Meaning |
 |---|---|---|---|
-| `hours` | 36 | 6–48 | hours after now (existing option, now always the full width) |
-| `past_hours` | 6 | 0–24 | hours before now with the measured temperature (new) |
+| `hours` | 36 | 6–48 | width of the chart in hours (existing option, new meaning) |
 
-- Window: `start = now − past_hours`, `end = now + hours`, both rounded down to the quarter.
-- The x scale always uses this window. The plan fills it from its first quarter up to its last one; the rest
-  stays empty. The axis, the grid lines and the date labels (#21) cover the whole window.
+- **End** = the end of the plan, which is the end of the last known price. With a price forecast sensor the
+  plan, and so the chart, goes on to the end of the forecast prices; those quarters are already marked
+  (#14). If the `horizon` option is shorter than the known prices, the plan and the chart end there.
+- **Start** = end − `hours`.
+- Everything between the start and now is history: the measured pond temperature. Everything from now to the
+  end is the plan.
+- **Plan longer than the span** (e.g. `hours: 12` and prices for 35 h): the window would start after now.
+  Then it becomes now … now + `hours`, so now stays visible and the plan is cut off on the right.
+- Examples with `hours: 36`:
+
+| Time | Prices known until | Window | Measured | Plan |
+|---|---|---|---|---|
+| 09:00 | today 24:00 | yesterday 12:00 – today 24:00 | 21 h | 15 h |
+| 14:00 (after the day-ahead prices) | tomorrow 24:00 | today 12:00 – tomorrow 24:00 | 2 h | 34 h |
+
+- So the history is longest just before the day-ahead prices arrive, and shortest just after.
 - The temperature scale covers the band, the plan and the measured values inside the window. The price scale
   covers the plan's prices only.
-- "Now" stays a red vertical line. With `past_hours: 0` the chart starts at now, as in 0.4.0, but keeps its
-  fixed span.
+- "Now" stays a red vertical line. The axis, the grid lines and the date labels (#21) cover the whole
+  window.
 
 ```mermaid
 flowchart LR
-  A["now − past_hours"] -->|measured, solid| N((now))
-  N -->|predicted, dashed| P["last known price"]
-  P -->|empty, axis only| E["now + hours"]
+  S["end − hours"] -->|measured, solid| N((now))
+  N -->|predicted, dashed| E["end of the last known price"]
 ```
+
+### 2.1 Longer history from the integration
+
+`pond_history` now covers 24 h. With `hours: 48` the measured part can be up to about 37 h long (48 h minus
+the shortest plan, about 11 h at 13:00). The attribute therefore covers **48 h** (192 quarters, about
+10 kB). It is not stored in the recorder, so this costs no database space. The small chart in the thermostat
+keeps showing only the last 24 h.
 
 ## 3. Measured and predicted temperature
 
@@ -46,7 +66,7 @@ flowchart LR
 | Predicted, from now | `plan[].temp` | dashed, same colour; starts at the current measured value so the two lines join |
 
 - Legend: "pond temperature (measured)" (solid) and "pond temperature (predicted)" (dashed).
-- `pond_history` covers 24 h. With `past_hours` above 24, the measured line starts later.
+- If the history is shorter than the measured part (just after installing), the measured line starts later.
 - Gaps of more than 30 minutes in the history break the measured line instead of drawing a straight
   segment across them.
 
@@ -86,7 +106,7 @@ classDiagram
     +now: number
   }
   class chart_ts {
-    +chartWindow(now, hours, pastHours) ChartWindow
+    +chartWindow(now, planEnd, hours) ChartWindow
     +scales(plan, history, window, width, height) ChartScales
     +quarterAt(scales, x) number
     +hoverInfo(plan, history, t) HoverInfo
@@ -115,12 +135,13 @@ classDiagram
   state, so a pointer move redraws the chart and not the whole card.
 - **`PlanModel`** gets `history` (from the gauge model) and `window`.
 - **`card.ts`** renders `<phpc-plan-chart>` instead of calling `planChart()`.
-- **Editor:** a number field for `past_hours`.
+- **Editor:** no new field; the description of `hours` changes to "width of the plan chart".
+- **Integration:** `POND_HISTORY_HOURS` 24 → 48.
 
 ## 6. Tests
 
-- `chartWindow`: span = `past_hours + hours`, rounded to the quarter; a plan shorter than the window keeps
-  the full x range.
+- `chartWindow`: the end is the plan end and the start is the end − `hours`; a plan longer than `hours`
+  gives now … now + `hours`; the span is always `hours`.
 - `hoverInfo`: a past quarter gives the measured value and no mode; a plan quarter gives the predicted
   temperature, mode, price and forecast flag; a quarter after the plan gives only the time.
 - `quarterAt`: the pointer x maps to the right quarter and is clamped to the window.
@@ -130,4 +151,4 @@ classDiagram
 
 ## 7. Open questions
 
-- Is `past_hours: 6` a good default?
+None.
