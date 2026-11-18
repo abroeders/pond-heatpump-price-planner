@@ -1,7 +1,7 @@
 // Thermostat gauge with a vertical band slider. Emits `set-target` and `set-band` after 1 s of quiet.
 
 import { LitElement, css, html, nothing, svg } from "lit";
-import { WINDOW, angleOf, arc, clampStep, point, ring, tempAt, START, SWEEP } from "./gauge-math";
+import { WINDOW, angleOf, arc, clampStep, point, ring, sparkline, tempAt, START, SWEEP } from "./gauge-math";
 import type { Localizer } from "./localize";
 import type { GaugeModel } from "./viewmodel";
 
@@ -9,6 +9,7 @@ export const DEBOUNCE_MS = 1000;
 const BAND_MIN = 0.1;
 const BAND_MAX = 1.0;
 const BAND_STEP = 0.05;
+export const SPARK_BOX = { x: 116, y: 212, w: 128, h: 38 }; // inside the ring, below the status line
 
 export class PhpcGauge extends LitElement {
   static properties = {
@@ -121,6 +122,20 @@ export class PhpcGauge extends LitElement {
       m.mode ? t(m.mode) : null,
       m.position ? t(m.position) : null,
     ].filter(Boolean);
+    const spark = sparkline(m.history, target, band, SPARK_BOX);
+    const b = SPARK_BOX;
+    const history = spark
+      ? svg`<g class="spark" role="img" aria-label=${t("history_24h")}>
+          <rect x=${b.x} y=${Math.max(spark.bandTop, b.y)} width=${b.w}
+            height=${Math.max(Math.min(spark.bandBottom, b.y + b.h) - Math.max(spark.bandTop, b.y), 0)} class="spark-band"/>
+          <line x1=${b.x} x2=${b.x + b.w} y1=${spark.target} y2=${spark.target} class="spark-target"/>
+          <path d=${spark.line} class="spark-line"/>
+          <text x=${b.x} y=${b.y + b.h + 11} class="spark-label">−24 h</text>
+          <text x=${b.x + b.w} y=${b.y + b.h + 11} class="spark-label" text-anchor="end">${t("now")}</text>
+          <text x=${b.x - 4} y=${b.y + 4} class="spark-label" text-anchor="end">${spark.hi.toFixed(1)}</text>
+          <text x=${b.x - 4} y=${b.y + b.h} class="spark-label" text-anchor="end">${spark.lo.toFixed(1)}</text>
+        </g>`
+      : svg``;
     return html`
       <div class="wrap">
         <svg viewBox="0 0 360 330" class="gauge">
@@ -137,6 +152,7 @@ export class PhpcGauge extends LitElement {
           <text x="180" y="140" class="caption" text-anchor="middle">${t("pond")}</text>
           <text x="180" y="178" class="pond" text-anchor="middle">${m.pond === null ? "–" : `${m.pond.toFixed(1)} °C`}</text>
           <text x="180" y="200" class="status ${m.position ?? ""}" text-anchor="middle">${status.join(" · ")}</text>
+          ${history}
         </svg>
         <div class="stepper" style="--window:${WINDOW}">
           <span class="caption">${t("target")}</span>
@@ -156,7 +172,7 @@ export class PhpcGauge extends LitElement {
 
   static styles = css`
     .wrap { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "gauge band" "step band"; align-items: center; gap: 0 12px; }
-    .gauge { grid-area: gauge; width: 100%; height: auto; touch-action: none; }
+    .gauge { grid-area: gauge; width: 100%; max-width: 340px; height: auto; justify-self: center; touch-action: none; }
     .ring { fill: none; stroke: var(--divider-color, #e0e0e0); stroke-width: 18; stroke-linecap: round; }
     .band { fill: none; stroke: var(--success-color, #66bb6a); stroke-width: 18; }
     .hit { fill: none; stroke: transparent; stroke-width: 40; cursor: pointer; }
@@ -164,9 +180,13 @@ export class PhpcGauge extends LitElement {
     .tick-label { font-size: 11px; fill: var(--secondary-text-color); }
     .handle { fill: var(--card-background-color, #fff); stroke: var(--primary-color, #1e88e5); stroke-width: 4; cursor: grab; }
     .handle:focus-visible { outline: none; stroke-width: 6; }
-    .pond-marker { fill: #0d47a1; }
+    .pond-marker { fill: var(--phpc-pond-color, #1e88e5); }
     .caption { font-size: 12px; fill: var(--secondary-text-color); color: var(--secondary-text-color); }
-    .pond { font-size: 34px; font-weight: 700; fill: #0d47a1; }
+    .pond { font-size: 34px; font-weight: 700; fill: var(--phpc-pond-color, #1e88e5); }
+    .spark-line { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 1.5; }
+    .spark-band { fill: var(--success-color, #66bb6a); opacity: 0.15; }
+    .spark-target { stroke: var(--primary-text-color); stroke-dasharray: 3 3; opacity: 0.5; }
+    .spark-label { font-size: 8px; fill: var(--secondary-text-color); }
     .status { font-size: 12px; fill: var(--success-color, #43a047); }
     .status.above_band { fill: var(--warning-color, #ef6c00); }
     .status.below_band { fill: var(--info-color, #1e88e5); }
@@ -175,6 +195,6 @@ export class PhpcGauge extends LitElement {
     .number { font-size: 16px; font-weight: 600; color: var(--primary-text-color); min-width: 72px; text-align: center; }
     button { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--secondary-background-color, #eceff1); color: var(--primary-text-color); font-size: 18px; cursor: pointer; }
     .band-slider { grid-area: band; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .band-slider input { writing-mode: vertical-lr; direction: rtl; height: 200px; accent-color: var(--success-color, #43a047); }
+    .band-slider input { writing-mode: vertical-lr; direction: rtl; height: 180px; accent-color: var(--success-color, #43a047); }
   `;
 }

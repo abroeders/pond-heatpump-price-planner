@@ -4,7 +4,7 @@ import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { plannerDevices } from "./entities";
 import { PhpcGauge } from "./gauge";
 import { illustration, illustrationStyles } from "./illustration";
-import { GRID_OPTIONS, columnsOf, layoutFor, spanFor, type Block, type Layout } from "./layout";
+import { GRID_OPTIONS, chartWidth, columnsOf, layoutFor, spanFor, type Block, type Layout } from "./layout";
 import { localizer, type Localizer } from "./localize";
 import { planChart, planChartStyles, planLegend } from "./plan-chart";
 import { figures, modelSection, nextLine, sectionStyles, switches } from "./sections";
@@ -104,7 +104,9 @@ export class PondHeatpumpPlannerCard extends LitElement {
               ${nextLine(vm.gauge, t, language)}`
           : nothing;
       case "plan":
-        return vm.plan ? html`${planChart(vm.plan, t, language)}${planLegend(vm.plan, t)}` : nothing;
+        if (vm.plan) return html`<div class="title">${t("plan_title")}</div>${planChart(vm.plan, t, language, chartWidth(this._layout))}${planLegend(vm.plan, t)}`;
+        if (vm.planMissing === null) return nothing;
+        return html`<div class="no-plan"><strong>${t("no_plan_yet")}</strong> · ${this.reasonText(vm.planMissing)}</div>`;
       case "figures":
         return vm.figures ? figures(vm.figures, t) : nothing;
       case "switches":
@@ -114,6 +116,12 @@ export class PondHeatpumpPlannerCard extends LitElement {
       case "model":
         return vm.model ? modelSection(vm.model, t) : nothing;
     }
+  }
+
+  private reasonText(reason: string): string {
+    const key = `reason_${reason}`;
+    const text = this.t(key);
+    return text === key ? this.t("reason_other") : text;
   }
 
   /** Configured sections as layout blocks; figures and switches share one block ("side"). */
@@ -149,7 +157,8 @@ export class PondHeatpumpPlannerCard extends LitElement {
     planChartStyles,
     sectionStyles,
     css`
-      ha-card { padding: 8px 0; overflow: hidden; display: grid; grid-template-columns: repeat(var(--phpc-columns, 1), minmax(0, 1fr)); grid-auto-flow: row; }
+      :host { display: block; } /* an inline host has no width, so the layout would never change */
+      ha-card { padding: 8px 0; overflow: hidden; display: grid; grid-template-columns: repeat(var(--phpc-columns, 1), minmax(0, 1fr)); grid-auto-flow: row dense; }
       .section { padding: 8px 16px; min-width: 0; border-top: 1px solid var(--divider-color, #e0e0e0); }
       ha-card.narrow .section:first-child { border-top: none; }
       ha-card.medium .section, ha-card.wide .section { border-top: none; padding: 12px 16px; }
@@ -157,6 +166,8 @@ export class PondHeatpumpPlannerCard extends LitElement {
       .section.side .part + .part { margin-top: 12px; }
       ha-card.medium .section.side, ha-card.wide .section.side { display: flex; flex-direction: column; justify-content: center; }
       .warning { color: var(--warning-color, #ef6c00); }
+      .title { font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px; }
+      .no-plan { color: var(--secondary-text-color); font-size: 14px; padding: 12px 0; text-align: center; }
     `,
   ];
 }

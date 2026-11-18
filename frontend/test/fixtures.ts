@@ -20,12 +20,21 @@ export function plan(n = 8) {
   }));
 }
 
+/** 24 h of pond temperatures, one per quarter, ending at 11:00 UTC on 17 Nov. */
+export function pondHistory(): { time: string; temp: number }[] {
+  const end = Date.parse("2026-11-17T11:00:00Z");
+  return Array.from({ length: 96 }, (_, i) => ({
+    time: new Date(end - (95 - i) * 900e3).toISOString(),
+    temp: Math.round((14.5 + 0.2 * Math.sin(i / 10)) * 100) / 100,
+  }));
+}
+
 export function fakeHass(overrides: Record<string, any> = {}): HomeAssistant & { calls: any[] } {
   const calls: any[] = [];
   const s = (state: string, attributes: Record<string, any> = {}) => ({ entity_id: "", state, attributes, last_updated: ts });
   const states: Record<string, any> = {
     "climate.pond_thermostat": s("heat", { current_temperature: 14.6, temperature: 14.5, hvac_action: "heating", min_temp: 5, max_temp: 28, target_temp_step: 0.1 }),
-    "sensor.pond_mode": s("low", { reason: "plan", plan: plan() }),
+    "sensor.pond_mode": s("low", { reason: "plan", plan: plan(), pond_history: pondHistory() }),
     "number.pond_band": s("0.25"),
     "sensor.pond_next_start": s("2026-11-17T11:00:00+00:00"),
     "sensor.pond_next_stop": s("2026-11-17T12:00:00+00:00"),

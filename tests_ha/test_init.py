@@ -35,16 +35,42 @@ async def test_setup_creates_entities_and_plans_in_dry_run(hass: HomeAssistant, 
     assert mode.attributes["control"] is False
     assert mode.attributes["would_set"] is not None
     assert len(mode.attributes["plan"]) > 0
+    assert isinstance(mode.attributes["pond_history"], list)
     assert state(hass, "climate", "thermostat").attributes["temperature"] == 15.0
     assert state(hass, "switch", "control").state == "off"
     assert state(hass, "select", "cop_method").state == "average"
     assert not calls  # dry run: nothing is sent
 
 
+async def test_mode_sensor_publishes_the_pond_history(hass: HomeAssistant, pond_states) -> None:
+    import time
+
+    from custom_components.pond_heatpump_price_planner.core.samples import Sample
+
+    entry = await setup(hass)
+    hass.data["_entry_id"] = entry.entry_id
+    coordinator = entry.runtime_data
+    now = time.time() // 900 * 900
+    coordinator.store.replace_samples(
+        sorted(
+            [Sample(t=now - 30 * 3600, pond=13.0, outdoor=5, power=0)]
+            + [Sample(t=now - 900 * i, pond=14.0 + i / 100, outdoor=5, power=0) for i in range(1, 5)]
+            + [Sample(t=now - 1800 - 1, pond=None, outdoor=5, power=0)],
+            key=lambda x: x.t,
+        )
+    )
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    history = state(hass, "sensor", "mode").attributes["pond_history"]
+    assert [p["temp"] for p in history] == [14.04, 14.03, 14.02, 14.01]  # older than 24 h and gaps left out
+
+
 async def test_control_on_sends_the_setpoint(hass: HomeAssistant, pond_states) -> None:
     entry = await setup(hass)
     calls = async_mock_service(hass, "climate", "set_temperature")  # after setup: loading climate replaces it
     hass.data["_entry_id"] = entry.entry_id
+    # a setpoint that fits no mode, so the planner always sends one (13 = off would be "unchanged" at night)
+    hass.states.async_set(CLIMATE, "heat", {**hass.states.get(CLIMATE).attributes, "temperature": 20})
     switch = state(hass, "switch", "control")
     await hass.services.async_call("switch", "turn_on", {"entity_id": switch.entity_id}, blocking=True)
     await entry.runtime_data.async_replan()
@@ -71,6 +97,27 @@ async def test_thermostat_sets_target_and_shows_heating(hass: HomeAssistant, pon
         "climate", "set_hvac_mode", {"entity_id": thermostat.entity_id, "hvac_mode": "heat"}, blocking=True
     )
     assert state(hass, "climate", "thermostat").state == "heat"
+
+
+async def test_plans_as_soon_as_the_pond_sensor_appears(hass: HomeAssistant, pond_states) -> None:
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    from .conftest import POND
+
+    hass.states.async_set(POND, "unavailable")
+    entry = await setup(hass)
+    coordinator = entry.runtime_data
+    assert coordinator.data.plan is None and coordinator.data.decision.reason == "no_pond_temperature"
+    hass.states.async_set(POND, "14.8", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    await hass.async_block_till_done()  # let the state listener schedule the replan
+    assert coordinator._replan_handle is not None
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))  # past the 2 s debounce
+    await hass.async_block_till_done()
+    assert coordinator.data.plan is not None
+    assert coordinator.data.decision.reason != "no_pond_temperature"
 
 
 async def test_band_is_in_celsius(hass: HomeAssistant, pond_states) -> None:

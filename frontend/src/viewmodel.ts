@@ -41,6 +41,8 @@ export interface GaugeModel {
   nextStart: string | null;
   nextStop: string | null;
   control: boolean | null;
+  /** pond temperature of the last 24 h (end of each quarter), oldest first */
+  history: { t: number; temp: number }[];
 }
 
 export interface Quarter {
@@ -88,6 +90,8 @@ export interface CardViewModel {
   illustration: IllustrationModel | null;
   gauge: GaugeModel | null;
   plan: PlanModel | null;
+  /** why there is no plan (the mode sensor's reason), when the planner has none */
+  planMissing: string | null;
   figures: FiguresModel | null;
   switches: { cover: SwitchModel | null; control: SwitchModel | null } | null;
   model: ModelSectionModel | null;
@@ -97,6 +101,14 @@ export interface CardViewModel {
 }
 
 const MODES: Mode[] = ["off", "low", "high"];
+
+function pondHistory(raw: unknown): { t: number; temp: number }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p) => ({ t: Date.parse(p?.time), temp: Number(p?.temp) }))
+    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.temp))
+    .sort((a, b) => a.t - b.t);
+}
 
 function state(hass: HomeAssistant, entityId: string | undefined | null): HassEntity | undefined {
   return entityId ? hass.states[entityId] : undefined;
@@ -148,6 +160,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     illustration: null,
     gauge: null,
     plan: null,
+    planMissing: null,
     figures: null,
     switches: null,
     model: null,
@@ -210,6 +223,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
         nextStart: available(state(hass, p.next_start)) ? state(hass, p.next_start)!.state : null,
         nextStop: available(state(hass, p.next_stop)) ? state(hass, p.next_stop)!.state : null,
         control: p.control ? isOn(hass, p.control) : null,
+        history: pondHistory(mode?.attributes.pond_history),
       }
     : null;
 
@@ -258,11 +272,14 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     copByOutdoor: Object.entries(outdoor).map(([k, v]) => [k, v === null ? null : Number(v).toFixed(1)]),
   };
 
+  const planMissing = plan ? null : available(mode) ? String(mode.attributes.reason ?? "no_plan") : "unavailable";
+
   return {
     ...empty,
     illustration,
     gauge,
     plan,
+    planMissing,
     figures,
     switches: { cover: sw("insulation_cover"), control: sw("control") },
     model,

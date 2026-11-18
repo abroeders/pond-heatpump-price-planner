@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -25,6 +26,7 @@ from .core.model import MODES
 from .entity import PlannerEntity
 
 PLAN_ATTRIBUTE_QUARTERS = 144
+POND_HISTORY_HOURS = 24
 
 
 def _ts(epoch: float | None) -> datetime | None:
@@ -54,6 +56,16 @@ def _plan_list(c: PlannerCoordinator) -> list[dict[str, Any]]:
             item["surplus"] = round(surplus[i], 3)
         out.append(item)
     return out
+
+
+def _pond_history(c: PlannerCoordinator) -> list[dict[str, Any]]:
+    """Pond temperature at the end of each stored quarter of the last 24 hours."""
+    since = time.time() - POND_HISTORY_HOURS * 3600
+    return [
+        {"time": _ts(s.t + 900).isoformat(), "temp": round(s.pond, 2)}
+        for s in c.store.samples
+        if s.pond is not None and s.t + 900 >= since
+    ]
 
 
 def _cop_attrs(result: CopResult | None, c: PlannerCoordinator) -> dict[str, Any]:
@@ -96,6 +108,7 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
             "price_status": _d(c).price_status,
             "horizon_end": _ts(_d(c).plan.start + len(_d(c).plan.modes) * 900) if _d(c).plan else None,
             "plan": _plan_list(c),
+            "pond_history": _pond_history(c),
         },
     ),
     PlannerSensorDescription(
@@ -246,7 +259,9 @@ async def async_setup_entry(
 
 class PlannerSensor(PlannerEntity, SensorEntity):
     entity_description: PlannerSensorDescription
-    _unrecorded_attributes = frozenset({"plan", "reports", "hours_by_outdoor", "hours_by_power"})
+    _unrecorded_attributes = frozenset(
+        {"plan", "pond_history", "reports", "hours_by_outdoor", "hours_by_power"}
+    )
 
     def __init__(self, coordinator: PlannerCoordinator, description: PlannerSensorDescription) -> None:
         super().__init__(coordinator, description.key)

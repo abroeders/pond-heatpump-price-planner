@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "../src/index";
 import { DEBOUNCE_MS } from "../src/gauge";
-import { DEVICE, fakeHass } from "./fixtures";
+import { DEVICE, fakeHass, plan, pondHistory } from "./fixtures";
 
 async function mount(hass = fakeHass(), extra: Record<string, unknown> = {}) {
   const card = document.createElement("pond-heatpump-planner-card") as any;
@@ -39,6 +39,8 @@ describe("card", () => {
 
   it("offers grid options and switches layout with its width", async () => {
     const card = await mount();
+    const styles = (customElements.get("pond-heatpump-planner-card") as any).styles.map((s: any) => s.cssText).join("");
+    expect(styles).toMatch(/:host\s*\{\s*display:\s*block/); // otherwise the observer measures 0 px
     expect(card.getGridOptions()).toEqual({ columns: "full", min_columns: 6, rows: "auto" });
     const haCard = () => card.shadowRoot.querySelector("ha-card");
     expect(haCard().classList.contains("narrow")).toBe(true);
@@ -51,6 +53,7 @@ describe("card", () => {
     expect(haCard().classList.contains("wide")).toBe(true);
     expect(card.shadowRoot.querySelector(".section.plan").getAttribute("style")).toContain("span 3");
     expect(card.shadowRoot.querySelector(".section.side").getAttribute("style")).toContain("span 1");
+    expect(card.shadowRoot.querySelector(".chart").getAttribute("viewBox")).toBe("0 0 1200 220");
   });
 
   it("animations follow the boolean entities", async () => {
@@ -96,6 +99,31 @@ describe("card", () => {
     await gauge.updateComplete;
     expect(gauge.shadowRoot.textContent).toContain("± 0.25 °C");
     expect(card.shadowRoot.querySelectorAll(".chart-legend li").length).toBeGreaterThanOrEqual(7);
+  });
+
+  it("shows the 24-hour history in the gauge, the plan title and the dates", async () => {
+    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "plan", plan: plan(144), pond_history: pondHistory() }, last_updated: "z" } }));
+    const gauge = card.shadowRoot.querySelector("phpc-gauge");
+    await gauge.updateComplete;
+    expect(gauge.shadowRoot.querySelector(".spark-line").getAttribute("d")).toMatch(/^M/);
+    expect(card.shadowRoot.querySelector(".plan .title").textContent).toBe("Plan:");
+    expect(card.shadowRoot.querySelectorAll(".chart .day-label").length).toBeGreaterThan(0);
+    expect(card.shadowRoot.querySelectorAll(".chart line.grid").length).toBeGreaterThan(0);
+  });
+
+  it("leaves the history out without data", async () => {
+    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "plan" }, last_updated: "y" } }));
+    const gauge = card.shadowRoot.querySelector("phpc-gauge");
+    await gauge.updateComplete;
+    expect(gauge.shadowRoot.querySelector(".spark")).toBeNull();
+  });
+
+  it("explains why there is no plan", async () => {
+    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "no_pond_temperature" }, last_updated: "x" } }));
+    expect(card.shadowRoot.querySelector(".chart")).toBeNull();
+    expect(card.shadowRoot.querySelector(".no-plan").textContent).toContain("waiting for the pond temperature");
+    const other = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "something_new" }, last_updated: "x" } }));
+    expect(other.shadowRoot.querySelector(".no-plan").textContent).toContain("waiting for the next planning cycle");
   });
 
   it("sends the band from the slider", async () => {

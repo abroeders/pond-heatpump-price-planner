@@ -27,7 +27,6 @@ class PondThermostat(PlannerEntity, ClimateEntity):
     _attr_hvac_modes = [HVACMode.HEAT]
     _attr_hvac_mode = HVACMode.HEAT
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = TARGET_MIN
     _attr_max_temp = TARGET_MAX
     _attr_target_temperature_step = TARGET_STEP
@@ -35,12 +34,10 @@ class PondThermostat(PlannerEntity, ClimateEntity):
     def __init__(self, coordinator: PlannerCoordinator) -> None:
         super().__init__(coordinator, "thermostat")
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _pond(self) -> float | None:
         return self.coordinator.data.pond
 
-    @property
-    def target_temperature(self) -> float:
+    def _target(self) -> float:
         return self.coordinator.target
 
     @property
@@ -67,3 +64,17 @@ class PondThermostat(PlannerEntity, ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Only heat exists; nothing to change."""
+
+
+# Home Assistant 2026.11 renamed the temperature properties to native_*;
+# the old names stop working in 2027.11.
+# Attach whichever names this Home Assistant version uses, so neither old nor new versions log a warning.
+NATIVE_CLIMATE = hasattr(ClimateEntity, "native_current_temperature")
+if NATIVE_CLIMATE:
+    PondThermostat._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    PondThermostat.native_current_temperature = property(PondThermostat._pond)
+    PondThermostat.native_target_temperature = property(PondThermostat._target)
+else:  # before 2026.11
+    PondThermostat._attr_temperature_unit = UnitOfTemperature.CELSIUS
+    PondThermostat.current_temperature = property(PondThermostat._pond)
+    PondThermostat.target_temperature = property(PondThermostat._target)

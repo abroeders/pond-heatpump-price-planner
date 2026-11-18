@@ -1,15 +1,50 @@
 import { describe, expect, it } from "vitest";
-import { scales, runs, summary } from "../src/chart";
+import { scales, runs, summary, timeTicks } from "../src/chart";
 import { legendItems } from "../src/plan-chart";
-import { columnsOf, layoutFor, spanFor } from "../src/layout";
+import { chartWidth, columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
 import { plannerDevices, resolvePlanner } from "../src/entities";
-import { angleOf, clampStep, ring, tempAt, START, SWEEP } from "../src/gauge-math";
+import { angleOf, clampStep, ring, sparkline, tempAt, START, SWEEP } from "../src/gauge-math";
 import { localizer } from "../src/localize";
 import { buildViewModel } from "../src/viewmodel";
 import { DEVICE, fakeHass } from "./fixtures";
 
 const config = { type: "custom:pond-heatpump-planner-card", device_id: DEVICE, heat_pump: { pump_speed: "sensor.pump_speed", pump_power: "sensor.pump_power", fan: "binary_sensor.fan", flow: "binary_sensor.flow", pump_fault: "binary_sensor.pump_fault" } };
+
+describe("time ticks and sparkline", () => {
+  it("ticks at local 0, 6, 12 and 18 h, marking midnights", () => {
+    const start = new Date(2026, 10, 17, 11, 15).getTime();
+    const ticks = timeTicks(start, start + 48 * 3600e3);
+    expect(ticks.length).toBe(8);
+    for (const k of ticks) {
+      expect(new Date(k.t).getHours() % 6).toBe(0);
+      expect(k.midnight).toBe(new Date(k.t).getHours() === 0);
+    }
+    expect(ticks.filter((k) => k.midnight).length).toBe(2);
+    expect(new Date(ticks[0].t).getHours()).toBe(12);
+  });
+
+  it("scales the sparkline to the history and the band", () => {
+    const box = { x: 0, y: 0, w: 100, h: 40 };
+    const h = [ { t: 0, temp: 14 }, { t: 1, temp: 15 } ];
+    const s = sparkline(h, 14.5, 0.25, box)!;
+    expect(s.lo).toBe(14);
+    expect(s.hi).toBe(15);
+    expect(s.line).toBe("M0.0 40.0 L100.0 0.0");
+    expect(s.target).toBeCloseTo(20);
+    expect(s.bandTop).toBeCloseTo(10);
+    expect(sparkline([{ t: 0, temp: 14 }], 14.5, 0.25, box)).toBeNull();
+    // a flat history still gets at least 0.5 K
+    const flat = sparkline([ { t: 0, temp: 14.5 }, { t: 1, temp: 14.5 } ], 14.5, 0.1, box)!;
+    expect(flat.hi - flat.lo).toBeCloseTo(0.5);
+  });
+
+  it("reads the pond history from the mode sensor", () => {
+    const vm = buildViewModel(fakeHass(), config);
+    expect(vm.gauge!.history.length).toBe(96);
+    expect(vm.gauge!.history[0].t).toBeLessThan(vm.gauge!.history[95].t);
+  });
+});
 
 describe("entities", () => {
   it("finds planner devices and resolves by translation key", () => {
@@ -120,6 +155,7 @@ describe("layout", () => {
     expect(spanFor("wide", "model")).toBe(3);
     for (const b of ["heat_pump", "thermostat", "side"] as const) expect(spanFor("wide", b)).toBe(1);
     for (const b of ["heat_pump", "thermostat", "plan", "side", "model"] as const) expect(spanFor("narrow", b)).toBe(1);
+    expect([chartWidth("narrow"), chartWidth("medium"), chartWidth("wide")]).toEqual([600, 900, 1200]);
   });
 });
 
