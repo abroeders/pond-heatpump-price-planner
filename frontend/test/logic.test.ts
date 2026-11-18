@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { scales, runs, summary } from "../src/chart";
 import { legendItems } from "../src/plan-chart";
-import { columnsOf, layoutFor, spanFor } from "../src/layout";
+import { chartWidth, columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
 import { plannerDevices, resolvePlanner } from "../src/entities";
 import { angleOf, clampStep, ring, tempAt, START, SWEEP } from "../src/gauge-math";
@@ -120,6 +120,7 @@ describe("layout", () => {
     expect(spanFor("wide", "model")).toBe(3);
     for (const b of ["heat_pump", "thermostat", "side"] as const) expect(spanFor("wide", b)).toBe(1);
     for (const b of ["heat_pump", "thermostat", "plan", "side", "model"] as const) expect(spanFor("narrow", b)).toBe(1);
+    expect([chartWidth("narrow"), chartWidth("medium"), chartWidth("wide")]).toEqual([600, 900, 1200]);
   });
 });
 

@@ -39,6 +39,8 @@ describe("card", () => {
 
   it("offers grid options and switches layout with its width", async () => {
     const card = await mount();
+    const styles = (customElements.get("pond-heatpump-planner-card") as any).styles.map((s: any) => s.cssText).join("");
+    expect(styles).toMatch(/:host\s*\{\s*display:\s*block/); // otherwise the observer measures 0 px
     expect(card.getGridOptions()).toEqual({ columns: "full", min_columns: 6, rows: "auto" });
     const haCard = () => card.shadowRoot.querySelector("ha-card");
     expect(haCard().classList.contains("narrow")).toBe(true);
@@ -51,6 +53,7 @@ describe("card", () => {
     expect(haCard().classList.contains("wide")).toBe(true);
     expect(card.shadowRoot.querySelector(".section.plan").getAttribute("style")).toContain("span 3");
     expect(card.shadowRoot.querySelector(".section.side").getAttribute("style")).toContain("span 1");
+    expect(card.shadowRoot.querySelector(".chart").getAttribute("viewBox")).toBe("0 0 1200 220");
   });
 
   it("animations follow the boolean entities", async () => {
