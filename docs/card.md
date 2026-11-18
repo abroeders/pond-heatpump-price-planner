@@ -14,13 +14,30 @@ resource to add.
 
 After an update of the integration, reload the browser page once if the card does not change.
 
+## Size and layout
+
+The card adapts its layout to its own width:
+
+| Card width | Layout |
+|---|---|
+| narrow (one dashboard column) | everything stacked |
+| about two columns (560 px and more) | heat pump and thermostat side by side; the plan over the full width; figures with switches next to the model |
+| three columns or more (900 px and more) | heat pump, thermostat and figures with switches side by side; plan and model over the full width |
+
+**Making it wider:**
+- **Sections dashboard:** the card fills its section by default. To make it 2, 3 or more dashboard columns
+  wide, make the section wider (*Edit section → column span*); the card follows. You can also make the card
+  narrower within its section, down to half a section.
+- **Masonry dashboard:** the card takes the width of its column.
+- **Panel view:** the card takes the full width of the screen.
+
 ## What it shows
 
 | Section | Contents |
 |---|---|
 | Heat pump | The drawing below, with live values and animations |
-| Thermostat | Ring with the pond temperature (triangle), the target (handle, drag it) and the band (green); target − / + and a vertical slider for the band; next start/stop and whether the planner controls the heat pump |
-| Plan | Predicted pond temperature (line) with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted) |
+| Thermostat | Ring with the pond temperature (triangle), the target (handle, drag it) and the band (green); target − / + and a vertical slider for the band (in °C); next start/stop and whether the planner controls the heat pump |
+| Plan | 24, 36 or 48 hours: predicted pond temperature (line) with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted); a legend below the chart explains each element |
 | Figures | Planned cost and energy for 24 h, share in expensive quarters, COP (method), heat loss, thermal power |
 | Switches | Insulation cover, control the heat pump |
 | Model | Collapsible: cooling coefficient, heating rates, prediction error, last learned, COP by outdoor temperature |
@@ -54,7 +71,7 @@ All options can be set in the visual editor.
 ```yaml
 type: custom:pond-heatpump-planner-card
 device_id: 0123456789abcdef   # the planner device
-hours: 36                     # 24 or 36 hours in the plan chart
+hours: 36                     # 24, 36 or 48 hours in the plan chart
 sections: [heat_pump, thermostat, plan, figures, switches, model]   # order and visibility
 heat_pump:                    # entities of the drawing, all optional
   water_in: sensor.heat_pump_water_inlet_temperature
@@ -75,7 +92,7 @@ heat_pump:                    # entities of the drawing, all optional
 | Option | Default |
 |---|---|
 | `device_id` | the first planner device |
-| `hours` | 36 |
+| `hours` | 36 (for 48, also set the integration's *Planning horizon* to 48 h) |
 | `sections` | all, in the order above |
 | `heat_pump.water_in`, `water_out`, `air_in`, `power` | the entities linked in the integration |
 | other `heat_pump` keys | none (left out of the drawing) |

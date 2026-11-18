@@ -17,5 +17,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/abroeders/pond-heatpump-price-planner/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

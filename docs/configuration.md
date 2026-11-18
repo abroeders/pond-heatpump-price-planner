@@ -37,6 +37,9 @@ A price sensor is accepted when its attributes contain one of these lists:
 
 Hourly prices are used for all four quarters of the hour.
 
+With a fixed day/night tariff instead of a dynamic one, a template sensor can publish this list: see
+[Price sensor for a day/night tariff](fixed-tariff.md).
+
 ### Solar surplus sensor types
 
 | `surplus_type` | The sensor shows | Surplus used by the planner |

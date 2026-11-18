@@ -66,6 +66,9 @@ steps. Only the first one is required; you can add the others later with *Reconf
 If a price sensor is refused ("no price list in a recognised format"), see
 [Troubleshooting](troubleshooting.md#price-sensor-not-recognised).
 
+**No dynamic tariff?** With a normal and an off-peak (day/night) tariff, make a price sensor yourself:
+see [Price sensor for a day/night tariff](fixed-tariff.md).
+
 ### Step 3: solar power (optional)
 
 | Field | Pick | Without it |
@@ -92,7 +95,7 @@ Open the new device (*Settings → Devices & services → Pond Heat Pump Price P
 | Entity | Set to |
 |---|---|
 | Thermostat | set the target temperature you want for the pond (5–28 °C) |
-| Band | how far the pond may move around the target; 0.25 K is a good start |
+| Band | how far the pond may move around the target; 0.25 °C is a good start |
 | Pond volume | the water volume in m³ (needed for the pond COP, heat loss and thermal power) |
 | Flow through the heat pump | the water flow through the heat pump in m³/h (needed for the flow COP) |
 | COP method | *Average of both* unless one method is known to be better for your pond |

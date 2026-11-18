@@ -9,7 +9,7 @@ const SENSOR_KEYS = ["water_in", "water_out", "air_in", "air_out", "power", "liq
 export function editorSchema() {
   return [
     { name: "device_id", selector: { device: { integration: DOMAIN } } },
-    { name: "hours", selector: { select: { options: ["24", "36"], mode: "dropdown" } } },
+    { name: "hours", selector: { select: { options: ["24", "36", "48"], mode: "dropdown" } } },
     { name: "sections", selector: { select: { options: [...SECTIONS], multiple: true, reorder: true } } },
     {
       name: "heat_pump",

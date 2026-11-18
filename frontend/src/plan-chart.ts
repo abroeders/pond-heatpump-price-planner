@@ -1,6 +1,6 @@
 // Plan chart: predicted pond temperature with band and target, mode bars, price step line.
 
-import { css, svg, type TemplateResult } from "lit";
+import { css, html, nothing, svg, type TemplateResult } from "lit";
 import { scales, summary } from "./chart";
 import type { Localizer } from "./localize";
 import type { PlanModel } from "./viewmodel";
@@ -49,7 +49,48 @@ export function planChart(plan: PlanModel, t: Localizer, language: string): Temp
     </svg>`;
 }
 
+export interface LegendItem {
+  key: string;
+  swatch: "line" | "dashed" | "area" | "low" | "high" | "step" | "expensive" | "solar" | "now" | "dotted";
+}
+
+/** Legend items for this plan; optional items only when the plan contains them. */
+export function legendItems(plan: PlanModel): LegendItem[] {
+  const s = scales(plan, W, H);
+  const items: LegendItem[] = [
+    { key: "legend_pond", swatch: "line" },
+    { key: "target", swatch: "dashed" },
+    { key: "band", swatch: "area" },
+    { key: "low", swatch: "low" },
+    { key: "high", swatch: "high" },
+    { key: "price", swatch: "step" },
+  ];
+  if (s.expensive.some(Boolean)) items.push({ key: "legend_expensive", swatch: "expensive" });
+  if (plan.quarters.some((q) => q.surplus)) items.push({ key: "legend_solar", swatch: "solar" });
+  items.push({ key: "now", swatch: "now" });
+  if (s.knownUntil !== null) items.push({ key: "legend_forecast", swatch: "dotted" });
+  return items;
+}
+
+export function planLegend(plan: PlanModel, t: Localizer): TemplateResult | typeof nothing {
+  return html`<ul class="chart-legend">
+    ${legendItems(plan).map((i) => html`<li><span class="sw ${i.swatch}"></span>${t(i.key)}</li>`)}
+  </ul>`;
+}
+
 export const planChartStyles = css`
+  .chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0; padding: 0; font-size: 11px; color: var(--secondary-text-color); }
+  .chart-legend li { display: flex; align-items: center; gap: 5px; }
+  .sw { display: inline-block; width: 18px; height: 10px; box-sizing: border-box; }
+  .sw.line { border-top: 2.5px solid #0d47a1; height: 0; }
+  .sw.dashed { border-top: 1.5px dashed var(--primary-text-color); height: 0; opacity: 0.6; }
+  .sw.area { background: var(--success-color, #66bb6a); opacity: 0.3; }
+  .sw.low { background: #1e88e5; opacity: 0.55; } .sw.high { background: #ef6c00; opacity: 0.6; }
+  .sw.step { border-top: 1.2px solid var(--secondary-text-color); height: 0; }
+  .sw.expensive { background: var(--warning-color, #ff9800); opacity: 0.2; }
+  .sw.solar { background: #fdd835; height: 4px; }
+  .sw.now { border-left: 2px solid var(--error-color, #e53935); width: 2px; height: 12px; }
+  .sw.dotted { border-left: 1.5px dotted var(--secondary-text-color); width: 2px; height: 12px; }
   .chart { width: 100%; height: auto; display: block; }
   .band { fill: var(--success-color, #66bb6a); opacity: 0.15; }
   .expensive { fill: var(--warning-color, #ff9800); opacity: 0.07; }

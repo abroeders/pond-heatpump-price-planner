@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-18
+
+### Added
+
+- Plan chart of the card: 48 hours option and a legend below the chart (#14).
+- The card is resizable in sections dashboards and adapts its layout to its width: one, two or three
+  columns (#16).
+- Documentation: a template price sensor for a normal and off-peak (day/night) tariff following the Dutch
+  rules (off-peak 23:00–7:00 on weekdays, weekends and recognised holidays all day, holidays calculated per
+  year), tested against Home Assistant's template engine (#15).
+
+### Changed
+
+- The band is shown in °C (number entity and card) instead of K; the value is unchanged (#14).
+
 ## [0.2.0] - 2026-11-17
 
 ### Added
@@ -43,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/abroeders/pond-heatpump-price-planner/releases/tag/v0.1.0
