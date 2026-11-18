@@ -42,6 +42,10 @@ at high power, with 1–2 starts a day and the pond within ±0.25 K.
 - Sensors for the pond temperature, the outdoor temperature and the heat pump's power.
 - Recommended: a price sensor with today's and tomorrow's prices, and a weather entity.
 
+**In use with** a W'eau pond heat pump (inverter, whole-degree setpoint, controlled through its `climate`
+entity in Home Assistant). The default setpoint offsets come from this heat pump; for another heat pump, check
+them as described in [Configuration](docs/configuration.md#finding-the-setpoint-offsets-for-another-heat-pump).
+
 ## Quick start
 
 1. **Add the repository.** HACS → ⋮ → *Custom repositories* →

@@ -71,6 +71,7 @@ A solar forecast sensor is read from a `forecast` list with `w` (W) per entry, o
 | `offset_off` | −2 K | −5–5 K | setpoint offset from the inlet temperature for off | must switch the compressor off |
 | `offset_low` | 0 K | −5–5 K | offset for low | must give the lowest stable power |
 | `offset_high` | +1 K | −5–5 K | offset for high | must give full power |
+| `offset_start` | +2 K | −5–5 K | offset for low and high while the heat pump is not running (power below `low_w`) | must start a stopped heat pump; once it runs, the mode's offset is sent at once |
 | `low_w` | 150 W | 0–5000 W | below this power the heat pump counts as off | used for learning and COP |
 | `high_w` | 650 W | 0–10000 W | from this power the heat pump counts as high | used for learning and COP; set between your low and high power |
 | `cop_window` | 14 d | 7–42 d | window of the COP sensors | shorter: follows changes faster, more noise |
@@ -81,10 +82,13 @@ Saving the options restarts the planner. The learned model and the stored data a
 
 ### Finding the setpoint offsets for another heat pump
 
-The defaults come from a heat pump that holds its water inlet at its setpoint with a whole-degree
-thermostat. To check yours:
+The defaults come from the heat pump the planner is in use with: a W'eau pond heat pump, which holds its
+water inlet at its setpoint with a whole-degree thermostat. To check yours:
 1. Set the heat pump's setpoint to the inlet temperature, then 1 K above it, then 2 K below it, with 30
    minutes between each step.
 2. Note the power at each step.
 3. Use the offset with the lowest stable power for low, the one with full power for high, and one where
    the compressor stops for off.
+4. Stop the heat pump (offset off), then try +1, +2 and +3, each for 10 minutes. The lowest one at which the
+   compressor starts is `offset_start`. Many heat pumps keep running on a setpoint at which they do not
+   start: the reference heat pump starts at +2 (not at 0 or +1) and then runs at low power on 0.

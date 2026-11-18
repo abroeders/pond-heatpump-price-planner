@@ -561,11 +561,11 @@ classDiagram
     }
     class SetpointStrategy {
         <<interface>>
-        +setpoint(mode, inlet, pond, min_temp, max_temp, step) float
+        +setpoint(mode, inlet, pond, min_temp, max_temp, step, running) float
     }
     class OffsetSetpoint {
-        +dict offsets
-        +setpoint(mode, inlet, pond, min_temp, max_temp, step) float
+        +dict offsets  off, low, high, start
+        +setpoint(mode, inlet, pond, min_temp, max_temp, step, running) float
     }
     class MismatchTracker {
         +float grace
@@ -575,8 +575,8 @@ classDiagram
     }
     class HeatPumpController {
         +str climate_entity
-        +setpoint_for(decision, inlet, pond) Optional~float~
-        +async_apply(decision, inlet, pond, control, now) ApplyResult
+        +setpoint_for(decision, inlet, pond, running) Optional~float~
+        +async_apply(decision, inlet, pond, control, now, running) ApplyResult
         +check_following(measured_mode, now) bool
     }
     class ApplyResult {
@@ -622,8 +622,9 @@ sequenceDiagram
     participant IR as issue registry
     Co->>Guard: decide(plan mode, pond, ...)
     Guard-->>Co: Decision
-    Co->>Ctl: async_apply(decision, inlet, pond, control, now)
-    Ctl->>SP: setpoint(mode, inlet, pond, min, max, step)
+    Co->>Ctl: async_apply(decision, inlet, pond, control, now, running)
+    Ctl->>SP: setpoint(mode, inlet, pond, min, max, step, running)
+    Note over SP: not running and low/high: start offset (+2)
     SP-->>Ctl: setpoint
     alt dry run, HVAC off or unavailable
         Ctl-->>Co: ApplyResult(setpoint, sent=false, reason)
@@ -635,6 +636,24 @@ sequenceDiagram
     opt no follow for 2 h
         Ctl->>IR: create repair issue
     end
+```
+
+### 6.4 Starting a stopped heat pump (#24)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Stopped
+    Stopped --> Starting: decision low or high
+    Starting --> Running: power ≥ low_w (re-apply at once)
+    Starting --> Starting: not started (repair after 2 h, as any mismatch)
+    Running --> Stopped: decision off
+    Running --> Starting: power < low_w at the next quarter
+    note right of Starting
+        setpoint = inlet + offset_start (+2)
+    end note
+    note right of Running
+        setpoint = inlet + offset of the mode (low 0, high +1)
+    end note
 ```
 
 ## 7. Home Assistant layer (#5)

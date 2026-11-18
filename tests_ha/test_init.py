@@ -76,7 +76,29 @@ async def test_control_on_sends_the_setpoint(hass: HomeAssistant, pond_states) -
     await entry.runtime_data.async_replan()
     await hass.async_block_till_done()
     assert calls and calls[-1].data["entity_id"] == CLIMATE
-    assert calls[-1].data["temperature"] in (13, 15, 16)  # off, low or high around inlet 15
+    assert calls[-1].data["temperature"] in (13, 17)  # off, or low/high with the start offset (not running)
+
+
+async def test_start_setpoint_until_the_heat_pump_runs(hass: HomeAssistant, pond_states) -> None:
+    from .conftest import POND, POWER
+
+    hass.states.async_set(POND, "14.6", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    entry = await setup(hass)
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    hass.data["_entry_id"] = entry.entry_id
+    switch = state(hass, "switch", "control")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": switch.entity_id}, blocking=True)
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    assert entry.runtime_data.data.decision.mode in ("low", "high")  # below the band of 15 ± 0.25
+    assert calls[-1].data["temperature"] == 17  # inlet 15 + start offset 2: the heat pump is off (5 W)
+    hass.states.async_set(CLIMATE, "heat", {**hass.states.get(CLIMATE).attributes, "temperature": 17})
+    hass.states.async_set(POWER, "120", {"device_class": "power", "unit_of_measurement": "W"})
+    await hass.async_block_till_done()
+    assert calls[-1].data["temperature"] == 17  # still below low_w (150 W): not started yet
+    hass.states.async_set(POWER, "380", {"device_class": "power", "unit_of_measurement": "W"})
+    await hass.async_block_till_done()
+    assert calls[-1].data["temperature"] in (15, 16)  # running: the mode's setpoint at once
 
 
 async def test_thermostat_sets_target_and_shows_heating(hass: HomeAssistant, pond_states) -> None:

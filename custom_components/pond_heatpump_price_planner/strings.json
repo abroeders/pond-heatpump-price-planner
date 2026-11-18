@@ -102,6 +102,7 @@
           "offset_off": "Setpoint offset off",
           "offset_low": "Setpoint offset low",
           "offset_high": "Setpoint offset high",
+          "offset_start": "Setpoint offset to start",
           "low_w": "Power threshold off/low",
           "high_w": "Power threshold low/high",
           "cop_window": "COP window",
@@ -114,7 +115,8 @@
           "start_penalty": "Higher: fewer starts at a slightly higher cost.",
           "margin": "The plan stays this far inside the band to absorb prediction errors.",
           "surcharge_auto": "Every night the last 14 days are replayed and the surcharge with the lowest real cost is chosen.",
-          "offset_low": "Setpoint = rounded inlet temperature + offset of the mode."
+          "offset_low": "Setpoint = rounded inlet temperature + offset of the mode.",
+          "offset_start": "Used for low and high while the heat pump is not running: a stopped heat pump often needs a higher setpoint to start. Back to the mode's offset as soon as the power reaches the off/low threshold."
         }
       }
     }
