@@ -823,12 +823,23 @@ classDiagram
     }
     class chart {
         <<module>>
+        +chartWindow(now, planEnd, hours) ChartWindow
         +scales(plan, w, h) ChartScales
+        +measuredPath(scales) / predictedPath(plan, scales)
+        +quarterAt(scales, x) / hoverInfo(plan, scales, t)
+        +timeTicks(start, end)
         +runs(quarters)
         +summary(plan, t, language) string
     }
+    class PhpcPlanChart {
+        <<LitElement phpc-plan-chart, no shadow root>>
+        +model PlanModel
+        -hover quarter
+        +pointer / keyboard → hairline + tooltip
+    }
     class gaugeMath {
         <<module gauge-math>>
+        +sparkline(history, target, band, box)
         +ring(target) Ring
         +angleOf(ring, temp) float
         +tempAt(ring, x, y, step, min, max) float
@@ -836,7 +847,8 @@ classDiagram
     class templates {
         <<modules>>
         +illustration(model, t)
-        +planChart(plan, t, language)
+        +planChart(plan, t, language, width, hover)
+        +tooltipLines(info, t, language)
         +planLegend(plan, t)
         +figures / switches / modelSection / nextLine
     }
@@ -853,7 +865,10 @@ classDiagram
     PondHeatpumpPlannerCard ..> viewmodel : on hass change
     viewmodel ..> entities
     PondHeatpumpPlannerCard o-- PhpcGauge
+    PondHeatpumpPlannerCard o-- PhpcPlanChart
     PondHeatpumpPlannerCard ..> templates
+    PhpcPlanChart ..> templates
+    PhpcPlanChart ..> chart
     templates ..> chart
     PhpcGauge ..> gaugeMath
     PondHeatpumpPlannerCard ..> localize
@@ -884,7 +899,25 @@ sequenceDiagram
     Card->>Svc: switch.turn_on / turn_off (switches)
 ```
 
-### 8.3 Animations
+### 8.3 Plan chart window and hover (#22)
+
+```mermaid
+sequenceDiagram
+    participant U as pointer / keyboard
+    participant PC as phpc-plan-chart
+    participant C as chart.ts
+    PC->>C: scales(plan): chartWindow(now, plan end, hours)
+    C-->>PC: window end − hours … end, measured points up to now
+    PC->>PC: draw measured (solid) and predicted (dashed) lines
+    U->>PC: pointermove / ← →
+    PC->>C: quarterAt(x) → hoverInfo(quarter)
+    C-->>PC: time, temperature (measured or predicted), mode, price
+    PC->>PC: hairline, dot and tooltip (only the chart re-renders)
+    U->>PC: pointerleave (mouse), tap outside, Escape
+    PC->>PC: hide
+```
+
+### 8.4 Animations
 
 ```mermaid
 stateDiagram-v2

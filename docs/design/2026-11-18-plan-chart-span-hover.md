@@ -1,7 +1,7 @@
 # Plan chart: fixed span, measured temperature, hairline with tooltip
 
 - Issue: #22
-- Status: draft
+- Status: **approved** (2026-11-18)
 - Date: 2026-11-18
 
 ## 1. Purpose

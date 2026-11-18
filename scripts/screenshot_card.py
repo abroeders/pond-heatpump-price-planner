@@ -5,7 +5,7 @@ reference dataset, and states as Home Assistant would publish them.
 
 Usage: python scripts/screenshot_card.py
 Needs: pip install playwright numpy; playwright install chromium
-Writes docs/images/card-light.png, card-dark.png and card-wide.png.
+Writes docs/images/card-light.png, card-dark.png, card-wide.png and card-tooltip.png.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import http.server
 import json
 import sys
 import threading
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,15 +30,23 @@ DEVICE = "pond_planner_device"
 P = "pond_heatpump_price_planner"
 OUT = ROOT / "docs" / "images"
 SHOTS = (("card-light.png", "light", 460), ("card-dark.png", "dark", 460), ("card-wide.png", "light", 1280))
+TOOLTIP_SHOT = ("card-tooltip.png", "light", 1280)
+START = "2026-11-12T12:00:00+01:00"  # noon, before the day-ahead prices: prices known until midnight
+POND_NOW = None  # filled from the reference data: the last measured value before START
+
+
+def pond_now() -> float:
+    start = epoch(START)
+    return round([r for r in load_reference() if r["t"] < start and r["pond"] is not None][-1]["pond"], 2)
 
 
 def example_plan() -> tuple[list[dict], dict]:
-    """36 h plan from the reference data, starting on a November afternoon."""
-    start = epoch("2026-11-12T12:00:00+01:00")
-    rows = [r for r in load_reference() if r["t"] >= start][:144]
+    """12 h plan from the reference data: from noon to midnight, the prices known before 13:00."""
+    start = epoch(START)
+    rows = [r for r in load_reference() if r["t"] >= start][:48]
     request = PlanRequest(
         start=start,
-        pond=14.6,
+        pond=pond_now(),
         mode_now="low",
         target=14.5,
         band=0.25,
@@ -53,22 +61,20 @@ def example_plan() -> tuple[list[dict], dict]:
             "mode": mode,
             "temp": round(plan.temps[i], 2),
             "price": round(plan.prices[i], 4),
-            "known": i < 48,
+            "known": True,
         }
         for i, mode in enumerate(plan.modes)
     ]
     return entries, {"cost": plan.cost, "energy": plan.energy_kwh, "share": plan.expensive_share}
 
 
-def pond_history(plan: list[dict]) -> list[dict]:
-    """An example of the last 24 hours: the shape of the first day of the plan, a day earlier."""
-    day = 24 * 3600
+def pond_history() -> list[dict]:
+    """The measured pond temperature of the 48 hours before the start, from the reference data."""
+    start = epoch(START)
     return [
-        {
-            "time": (datetime.fromisoformat(q["start"]) - timedelta(seconds=day - 900)).isoformat(),
-            "temp": q["temp"],
-        }
-        for q in plan[:96]
+        {"time": datetime.fromtimestamp(r["t"] + 900, UTC).isoformat(), "temp": round(r["pond"], 2)}
+        for r in load_reference()
+        if start - 48 * 3600 <= r["t"] < start - 900 and r["pond"] is not None
     ]
 
 
@@ -79,12 +85,12 @@ def hass_json(now_iso: str) -> dict:
         return {"state": str(state), "attributes": attributes, "last_updated": now_iso}
 
     planner = {
-        "thermostat": ("climate.pond_thermostat", s("heat", current_temperature=14.6, temperature=14.5,
+        "thermostat": ("climate.pond_thermostat", s("heat", current_temperature=pond_now(), temperature=14.5,
                                                     hvac_action="heating", min_temp=5, max_temp=28,
                                                     target_temp_step=0.1)),
         "mode": (
             "sensor.pond_mode",
-            s(plan[0]["mode"], reason="plan", plan=plan, pond_history=pond_history(plan)),
+            s(plan[0]["mode"], reason="plan", plan=plan, pond_history=pond_history()),
         ),
         "band": ("number.pond_band", s(0.25, unit_of_measurement="°C")),
         "next_start": ("sensor.pond_next_start", s("2026-11-12T23:00:00+00:00")),
@@ -158,7 +164,7 @@ def main() -> None:
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch()
-            for name, theme, width in SHOTS:
+            for name, theme, width in (*SHOTS, TOOLTIP_SHOT):
                 page = browser.new_page(
                     viewport={"width": width + 32, "height": 900},
                     device_scale_factor=2,
@@ -167,13 +173,20 @@ def main() -> None:
                 page.emulate_media(reduced_motion="reduce")  # still frames: no half-way animations
                 page.clock.set_fixed_time(
                     datetime(2026, 11, 12, 11, 5, tzinfo=UTC)
-                )  # "now" inside the example plan
+                )  # "now" at the plan start
                 page.goto(
                     f"http://127.0.0.1:{port}/scripts/screenshots/harness.html?theme={theme}&width={width}"
                 )
                 page.wait_for_function("window.__ready === true")
                 page.wait_for_timeout(800)  # fonts
-                page.locator("#host").screenshot(path=str(OUT / name))
+                target = page.locator("#host")
+                if (name, theme, width) == TOOLTIP_SHOT:
+                    plot = page.locator("phpc-plan-chart .plot")
+                    box = plot.bounding_box()
+                    page.mouse.move(box["x"] + box["width"] * 0.82, box["y"] + box["height"] * 0.5)
+                    page.wait_for_timeout(200)
+                    target = plot
+                target.screenshot(path=str(OUT / name))
                 print(OUT / name)
             browser.close()
     finally:
