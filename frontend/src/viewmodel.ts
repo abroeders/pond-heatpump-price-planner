@@ -41,6 +41,8 @@ export interface GaugeModel {
   nextStart: string | null;
   nextStop: string | null;
   control: boolean | null;
+  /** pond temperature of the last 24 h (end of each quarter), oldest first */
+  history: { t: number; temp: number }[];
 }
 
 export interface Quarter {
@@ -99,6 +101,14 @@ export interface CardViewModel {
 }
 
 const MODES: Mode[] = ["off", "low", "high"];
+
+function pondHistory(raw: unknown): { t: number; temp: number }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p) => ({ t: Date.parse(p?.time), temp: Number(p?.temp) }))
+    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.temp))
+    .sort((a, b) => a.t - b.t);
+}
 
 function state(hass: HomeAssistant, entityId: string | undefined | null): HassEntity | undefined {
   return entityId ? hass.states[entityId] : undefined;
@@ -213,6 +223,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
         nextStart: available(state(hass, p.next_start)) ? state(hass, p.next_start)!.state : null,
         nextStop: available(state(hass, p.next_stop)) ? state(hass, p.next_stop)!.state : null,
         control: p.control ? isOn(hass, p.control) : null,
+        history: pondHistory(mode?.attributes.pond_history),
       }
     : null;
 

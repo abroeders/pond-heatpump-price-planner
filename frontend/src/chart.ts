@@ -27,6 +27,23 @@ function quantile(sorted: number[], q: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
+export interface TimeTick {
+  t: number;
+  midnight: boolean;
+}
+
+/** Ticks at every local 0, 6, 12 and 18 h between start and end (ms); correct across DST changes. */
+export function timeTicks(start: number, end: number, everyHours = 6): TimeTick[] {
+  const d = new Date(start);
+  d.setMinutes(0, 0, 0);
+  if (d.getTime() < start) d.setHours(d.getHours() + 1);
+  const out: TimeTick[] = [];
+  for (; d.getTime() < end; d.setHours(d.getHours() + 1)) {
+    if (d.getHours() % everyHours === 0) out.push({ t: d.getTime(), midnight: d.getHours() === 0 });
+  }
+  return out;
+}
+
 export function scales(plan: PlanModel, width: number, height: number, pad = 28): ChartScales {
   const q = plan.quarters;
   const start = q[0].t;

@@ -150,7 +150,7 @@
         "name": "Next stop"
       },
       "planned_energy": {
-        "name": "Planned energy next 24 h"
+        "name": "Planned electricity next 24 h"
       },
       "planned_cost": {
         "name": "Planned cost next 24 h"

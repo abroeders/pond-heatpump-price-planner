@@ -15,7 +15,7 @@ import http.server
 import json
 import sys
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +60,18 @@ def example_plan() -> tuple[list[dict], dict]:
     return entries, {"cost": plan.cost, "energy": plan.energy_kwh, "share": plan.expensive_share}
 
 
+def pond_history(plan: list[dict]) -> list[dict]:
+    """An example of the last 24 hours: the shape of the first day of the plan, a day earlier."""
+    day = 24 * 3600
+    return [
+        {
+            "time": (datetime.fromisoformat(q["start"]) - timedelta(seconds=day - 900)).isoformat(),
+            "temp": q["temp"],
+        }
+        for q in plan[:96]
+    ]
+
+
 def hass_json(now_iso: str) -> dict:
     plan, totals = example_plan()
 
@@ -70,7 +82,10 @@ def hass_json(now_iso: str) -> dict:
         "thermostat": ("climate.pond_thermostat", s("heat", current_temperature=14.6, temperature=14.5,
                                                     hvac_action="heating", min_temp=5, max_temp=28,
                                                     target_temp_step=0.1)),
-        "mode": ("sensor.pond_mode", s(plan[0]["mode"], reason="plan", plan=plan)),
+        "mode": (
+            "sensor.pond_mode",
+            s(plan[0]["mode"], reason="plan", plan=plan, pond_history=pond_history(plan)),
+        ),
         "band": ("number.pond_band", s(0.25, unit_of_measurement="°C")),
         "next_start": ("sensor.pond_next_start", s("2026-11-12T23:00:00+00:00")),
         "next_stop": ("sensor.pond_next_stop", s("2026-11-12T16:15:00+00:00")),
@@ -144,7 +159,11 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             for name, theme, width in SHOTS:
-                page = browser.new_page(viewport={"width": width + 32, "height": 900}, device_scale_factor=2)
+                page = browser.new_page(
+                    viewport={"width": width + 32, "height": 900},
+                    device_scale_factor=2,
+                    timezone_id="Europe/Amsterdam",
+                )
                 page.emulate_media(reduced_motion="reduce")  # still frames: no half-way animations
                 page.clock.set_fixed_time(
                     datetime(2026, 11, 12, 11, 5, tzinfo=UTC)

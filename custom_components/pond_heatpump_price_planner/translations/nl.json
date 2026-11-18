@@ -150,7 +150,7 @@
         "name": "Volgende stop"
       },
       "planned_energy": {
-        "name": "Gepland verbruik komende 24 uur"
+        "name": "Gepland stroomverbruik komende 24 uur"
       },
       "planned_cost": {
         "name": "Geplande kosten komende 24 uur"
