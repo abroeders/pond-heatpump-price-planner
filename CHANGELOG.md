@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
+### Added
+
+- The card shows the pond temperature of the last 24 hours in the thermostat, from the new attribute
+  `pond_history` of the mode sensor (#21).
+- The plan chart has a "Plan:" title, the date at every midnight and vertical lines every 6 hours in local
+  time (#21).
+- Screenshots of the card in the README (shown by HACS and the marketplace) and in the docs, made from the
+  real card with `scripts/screenshot_card.py` (#18).
+
+### Changed
+
+- The card explains why there is no plan instead of hiding the chart (#20).
+- "Planned energy" is now called "planned electricity": it is electrical energy, not heat (#21).
+
 ### Fixed
 
 - A plan is made again as soon as Home Assistant has started and whenever the pond, price or heat pump
@@ -14,27 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sensors that only report changes were treated as missing after 30 minutes (#20).
 - The thermostat uses the native climate properties of Home Assistant 2026.11, without deprecation warnings
   (#20).
-
-### Changed
-
-- The card explains why there is no plan instead of hiding the chart (#20).
-- The card shows the pond temperature of the last 24 hours in the thermostat, a "Plan:" title, and the date
-  at every midnight in the plan with vertical lines every 6 hours in local time (#21).
-- "Planned energy" is now called "planned electricity": it is electrical energy, not heat (#21).
-
-### Added
-
-- Attribute `pond_history` on the mode sensor (#21).
-
-## [0.3.1] - 2026-11-18
-
-### Added
-
-- Screenshots of the card in the README (shown by HACS and the marketplace) and in the docs, made from the
-  real card with `scripts/screenshot_card.py` (#18).
-
-### Fixed
-
 - The card now switches to its two- and three-column layout: the card element was inline and its width was
   measured as 0. On wide cards the key figures fill the empty cell next to the thermostat, and the plan chart
   keeps its height and text size (#18).
@@ -92,8 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.1...HEAD
-[0.3.1]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.0...v0.3.1
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/abroeders/pond-heatpump-price-planner/releases/tag/v0.1.0
