@@ -5,11 +5,11 @@ import { scales, summary } from "./chart";
 import type { Localizer } from "./localize";
 import type { PlanModel } from "./viewmodel";
 
-const W = 600;
+const DEFAULT_W = 600;
 const H = 220;
 const QUARTER = 15 * 60 * 1000;
 
-export function planChart(plan: PlanModel, t: Localizer, language: string): TemplateResult {
+export function planChart(plan: PlanModel, t: Localizer, language: string, W = DEFAULT_W): TemplateResult {
   const s = scales(plan, W, H);
   const q = plan.quarters;
   const bw = s.x(q[0].t + QUARTER) - s.x(q[0].t);
@@ -56,7 +56,7 @@ export interface LegendItem {
 
 /** Legend items for this plan; optional items only when the plan contains them. */
 export function legendItems(plan: PlanModel): LegendItem[] {
-  const s = scales(plan, W, H);
+  const s = scales(plan, DEFAULT_W, H);
   const items: LegendItem[] = [
     { key: "legend_pond", swatch: "line" },
     { key: "target", swatch: "dashed" },
@@ -82,7 +82,7 @@ export const planChartStyles = css`
   .chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0; padding: 0; font-size: 11px; color: var(--secondary-text-color); }
   .chart-legend li { display: flex; align-items: center; gap: 5px; }
   .sw { display: inline-block; width: 18px; height: 10px; box-sizing: border-box; }
-  .sw.line { border-top: 2.5px solid #0d47a1; height: 0; }
+  .sw.line { border-top: 2.5px solid var(--phpc-pond-color, #1e88e5); height: 0; }
   .sw.dashed { border-top: 1.5px dashed var(--primary-text-color); height: 0; opacity: 0.6; }
   .sw.area { background: var(--success-color, #66bb6a); opacity: 0.3; }
   .sw.low { background: #1e88e5; opacity: 0.55; } .sw.high { background: #ef6c00; opacity: 0.6; }
@@ -97,7 +97,7 @@ export const planChartStyles = css`
   .sun { fill: #fdd835; }
   .bar.low { fill: #1e88e5; opacity: 0.55; } .bar.high { fill: #ef6c00; opacity: 0.6; } .bar.off { fill: none; }
   .target { stroke: var(--primary-text-color); stroke-dasharray: 4 4; opacity: 0.6; }
-  .temp { fill: none; stroke: #0d47a1; stroke-width: 2.5; }
+  .temp { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 2.5; }
   .price { fill: none; stroke: var(--secondary-text-color); stroke-width: 1.2; }
   .known { stroke: var(--secondary-text-color); stroke-dasharray: 2 3; }
   .now { stroke: var(--error-color, #e53935); stroke-width: 1.5; }

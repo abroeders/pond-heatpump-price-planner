@@ -7,6 +7,10 @@ The entity IDs below assume a planner named "Pond" that was added while Home Ass
 Check the real IDs on the device page, or in *Settings → Devices & services → Entities*, and replace them
 where needed.
 
+The built-in card looks like this; see [Lovelace card](card.md):
+
+![The built-in card](images/card-wide.png)
+
 ## Thermostat card
 
 ```yaml

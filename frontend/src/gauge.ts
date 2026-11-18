@@ -156,7 +156,7 @@ export class PhpcGauge extends LitElement {
 
   static styles = css`
     .wrap { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "gauge band" "step band"; align-items: center; gap: 0 12px; }
-    .gauge { grid-area: gauge; width: 100%; height: auto; touch-action: none; }
+    .gauge { grid-area: gauge; width: 100%; max-width: 340px; height: auto; justify-self: center; touch-action: none; }
     .ring { fill: none; stroke: var(--divider-color, #e0e0e0); stroke-width: 18; stroke-linecap: round; }
     .band { fill: none; stroke: var(--success-color, #66bb6a); stroke-width: 18; }
     .hit { fill: none; stroke: transparent; stroke-width: 40; cursor: pointer; }
@@ -164,9 +164,9 @@ export class PhpcGauge extends LitElement {
     .tick-label { font-size: 11px; fill: var(--secondary-text-color); }
     .handle { fill: var(--card-background-color, #fff); stroke: var(--primary-color, #1e88e5); stroke-width: 4; cursor: grab; }
     .handle:focus-visible { outline: none; stroke-width: 6; }
-    .pond-marker { fill: #0d47a1; }
+    .pond-marker { fill: var(--phpc-pond-color, #1e88e5); }
     .caption { font-size: 12px; fill: var(--secondary-text-color); color: var(--secondary-text-color); }
-    .pond { font-size: 34px; font-weight: 700; fill: #0d47a1; }
+    .pond { font-size: 34px; font-weight: 700; fill: var(--phpc-pond-color, #1e88e5); }
     .status { font-size: 12px; fill: var(--success-color, #43a047); }
     .status.above_band { fill: var(--warning-color, #ef6c00); }
     .status.below_band { fill: var(--info-color, #1e88e5); }
@@ -175,6 +175,6 @@ export class PhpcGauge extends LitElement {
     .number { font-size: 16px; font-weight: 600; color: var(--primary-text-color); min-width: 72px; text-align: center; }
     button { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--secondary-background-color, #eceff1); color: var(--primary-text-color); font-size: 18px; cursor: pointer; }
     .band-slider { grid-area: band; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .band-slider input { writing-mode: vertical-lr; direction: rtl; height: 200px; accent-color: var(--success-color, #43a047); }
+    .band-slider input { writing-mode: vertical-lr; direction: rtl; height: 180px; accent-color: var(--success-color, #43a047); }
   `;
 }

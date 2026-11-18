@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Screenshots of the card in the README (shown by HACS and the marketplace) and in the docs, made from the
+  real card with `scripts/screenshot_card.py` (#18).
+
+### Fixed
+
+- The card now switches to its two- and three-column layout: the card element was inline and its width was
+  measured as 0. On wide cards the key figures fill the empty cell next to the thermostat, and the plan chart
+  keeps its height and text size (#18).
+- Better contrast of the pond temperature and the predicted temperature line in dark themes (#18).
+
 ## [0.3.0] - 2026-11-18
 
 ### Added

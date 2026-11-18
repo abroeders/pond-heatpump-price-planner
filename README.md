@@ -11,6 +11,14 @@ optionally, your own solar power. It prefers long runs at low power, where a hea
 and it preheats before expensive periods when that pays off. Safety rules keep the pond in its band whatever
 happens.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/abroeders/pond-heatpump-price-planner/main/docs/images/card-wide.png" alt="The built-in card: heat pump drawing, thermostat with band, key figures and the plan" width="100%">
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/abroeders/pond-heatpump-price-planner/main/docs/images/card-light.png" alt="The card in one dashboard column, light theme" width="45%">
+  <img src="https://raw.githubusercontent.com/abroeders/pond-heatpump-price-planner/main/docs/images/card-dark.png" alt="The card in one dashboard column, dark theme" width="45%">
+</p>
+
 ## Features
 
 - **Cost-optimal plan** over 24–36 h with dynamic programming, replanned every quarter hour.

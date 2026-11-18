@@ -25,5 +25,10 @@ export function spanFor(layout: Layout, block: Block): number {
   return SPANS[layout][block];
 }
 
+/** Width of the plan chart drawing per layout, so its height and text keep their size on wide cards. */
+export function chartWidth(layout: Layout): number {
+  return layout === "wide" ? 1200 : layout === "medium" ? 900 : 600;
+}
+
 /** Home Assistant sections dashboard: full width by default, at least half a section, height follows content. */
 export const GRID_OPTIONS = { columns: "full", min_columns: 6, rows: "auto" } as const;

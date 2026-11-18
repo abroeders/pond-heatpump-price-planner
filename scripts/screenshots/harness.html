@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #03a9f4; --primary-text-color: #212121; --secondary-text-color: #727272;
+    --card-background-color: #ffffff; --secondary-background-color: #e5e5e5; --divider-color: #e0e0e0;
+    --success-color: #43a047; --warning-color: #ffa600; --error-color: #db4437; --info-color: #039be5;
+    --ha-font-family-body: Roboto, sans-serif;
+  }
+  :root.dark {
+    --primary-text-color: #e1e1e1; --secondary-text-color: #9b9b9b; --card-background-color: #1c1c1c;
+    --secondary-background-color: #282828; --divider-color: rgba(225, 225, 225, 0.12);
+  }
+  body { margin: 0; padding: 16px; background: #fafafa; font-family: Roboto, sans-serif; }
+  :root.dark body { background: #111111; }
+  #host { width: var(--width, 460px); }
+</style>
+<script>
+  // Minimal ha-card: a rounded surface whose children take part in the card's own grid.
+  customElements.define("ha-card", class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML =
+        "<style>:host{display:block;background:var(--card-background-color);color:var(--primary-text-color);" +
+        "border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.12);border:1px solid var(--divider-color)}</style><slot></slot>";
+    }
+  });
+</script>
+</head>
+<body>
+<div id="host"></div>
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  if (params.get("theme") === "dark") document.documentElement.classList.add("dark");
+  document.documentElement.style.setProperty("--width", `${params.get("width") || 460}px`);
+  await import("/custom_components/pond_heatpump_price_planner/frontend/pond-heatpump-planner-card.js");
+  const hass = await (await fetch("/scripts/screenshots/hass.json")).json();
+  hass.callService = async () => {};
+  const card = document.createElement("pond-heatpump-planner-card");
+  card.setConfig(hass.__config);
+  card.hass = hass;
+  document.getElementById("host").appendChild(card);
+  await card.updateComplete;
+  card.resized(document.getElementById("host").clientWidth);
+  await card.updateComplete;
+  window.__ready = true;
+</script>
+</body>
+</html>
