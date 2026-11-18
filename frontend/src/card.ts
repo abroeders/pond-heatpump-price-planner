@@ -6,7 +6,7 @@ import { PhpcGauge } from "./gauge";
 import { illustration, illustrationStyles } from "./illustration";
 import { GRID_OPTIONS, chartWidth, columnsOf, layoutFor, spanFor, type Block, type Layout } from "./layout";
 import { localizer, type Localizer } from "./localize";
-import { planChart, planChartStyles, planLegend } from "./plan-chart";
+import { planChartStyles, planLegend } from "./plan-chart";
 import { figures, modelSection, nextLine, sectionStyles, switches } from "./sections";
 import type { CardConfig, HomeAssistant, Section } from "./types";
 import { buildViewModel, type CardViewModel } from "./viewmodel";
@@ -14,6 +14,7 @@ import { buildViewModel, type CardViewModel } from "./viewmodel";
 export const CARD_TAG = "pond-heatpump-planner-card";
 export const EDITOR_TAG = "pond-heatpump-planner-card-editor";
 export const GAUGE_TAG = "phpc-gauge";
+export const PLAN_CHART_TAG = "phpc-plan-chart";
 
 export class PondHeatpumpPlannerCard extends LitElement {
   static properties = { _vm: { state: true }, _layout: { state: true } };
@@ -104,7 +105,10 @@ export class PondHeatpumpPlannerCard extends LitElement {
               ${nextLine(vm.gauge, t, language)}`
           : nothing;
       case "plan":
-        if (vm.plan) return html`<div class="title">${t("plan_title")}</div>${planChart(vm.plan, t, language, chartWidth(this._layout))}${planLegend(vm.plan, t)}`;
+        if (vm.plan)
+          return html`<div class="title">${t("plan_title")}</div>
+            <phpc-plan-chart .model=${vm.plan} .t=${t} .language=${language} .width=${chartWidth(this._layout)}></phpc-plan-chart>
+            ${planLegend(vm.plan, t)}`;
         if (vm.planMissing === null) return nothing;
         return html`<div class="no-plan"><strong>${t("no_plan_yet")}</strong> · ${this.reasonText(vm.planMissing)}</div>`;
       case "figures":

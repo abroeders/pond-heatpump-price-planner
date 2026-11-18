@@ -42,7 +42,7 @@ export interface GaugeModel {
   nextStop: string | null;
   control: boolean | null;
   /** pond temperature of the last 24 h (end of each quarter), oldest first */
-  history: { t: number; temp: number }[];
+  history: HistoryPoint[];
 }
 
 export interface Quarter {
@@ -54,11 +54,22 @@ export interface Quarter {
   surplus: number | null;
 }
 
+export interface HistoryPoint {
+  t: number;
+  temp: number;
+}
+
 export interface PlanModel {
   quarters: Quarter[];
   target: number;
   band: number;
   now: number;
+  /** width of the chart in hours; the chart ends where the plan ends */
+  hours: number;
+  /** measured pond temperature (end of each quarter, oldest first) */
+  history: HistoryPoint[];
+  /** current pond temperature; the measured line ends and the predicted line starts here */
+  pond: number | null;
 }
 
 export interface FiguresModel {
@@ -102,7 +113,7 @@ export interface CardViewModel {
 
 const MODES: Mode[] = ["off", "low", "high"];
 
-function pondHistory(raw: unknown): { t: number; temp: number }[] {
+function pondHistory(raw: unknown): HistoryPoint[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((p) => ({ t: Date.parse(p?.time), temp: Number(p?.temp) }))
@@ -206,6 +217,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
 
   // --- thermostat gauge -------------------------------------------------------------------------
   const action = available(thermostat) ? thermostat.attributes.hvac_action : null;
+  const history = pondHistory(mode?.attributes.pond_history);
   const gauge: GaugeModel | null = p.thermostat
     ? {
         pond,
@@ -223,7 +235,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
         nextStart: available(state(hass, p.next_start)) ? state(hass, p.next_start)!.state : null,
         nextStop: available(state(hass, p.next_stop)) ? state(hass, p.next_stop)!.state : null,
         control: p.control ? isOn(hass, p.control) : null,
-        history: pondHistory(mode?.attributes.pond_history),
+        history: history.filter((h) => h.t >= now - 24 * 3600e3),
       }
     : null;
 
@@ -241,7 +253,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     }))
     .filter((q) => Number.isFinite(q.t) && Number.isFinite(q.temp))
     .slice(0, hours * 4);
-  const plan: PlanModel | null = quarters.length ? { quarters, target, band, now } : null;
+  const plan: PlanModel | null = quarters.length ? { quarters, target, band, now, hours, history, pond } : null;
 
   // --- figures ------------------------------------------------------------------------------------
   const costEntity = state(hass, p.planned_cost);
