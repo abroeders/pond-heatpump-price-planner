@@ -22,7 +22,7 @@ PLAN = "plan"
 class SafetySettings:
     far_below: float = 0.3  # K below the band for high mode
     hysteresis: float = 0.05  # K
-    stale_after: float = 1800.0  # s without a pond temperature
+    stale_after: float = 6 * 3600.0  # s without any report; many sensors only report changes
 
 
 @dataclass(frozen=True)

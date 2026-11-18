@@ -101,6 +101,14 @@ describe("card", () => {
     expect(card.shadowRoot.querySelectorAll(".chart-legend li").length).toBeGreaterThanOrEqual(7);
   });
 
+  it("explains why there is no plan", async () => {
+    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "no_pond_temperature" }, last_updated: "x" } }));
+    expect(card.shadowRoot.querySelector(".chart")).toBeNull();
+    expect(card.shadowRoot.querySelector(".no-plan").textContent).toContain("waiting for the pond temperature");
+    const other = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "something_new" }, last_updated: "x" } }));
+    expect(other.shadowRoot.querySelector(".no-plan").textContent).toContain("waiting for the next planning cycle");
+  });
+
   it("sends the band from the slider", async () => {
     vi.useFakeTimers();
     const hass = fakeHass();

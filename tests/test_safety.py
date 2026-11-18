@@ -26,7 +26,9 @@ def test_plan_is_followed_inside_the_band():
 def test_missing_or_stale_pond_temperature_gives_low():
     g = SafetyGuard()
     assert decide(g, None) == Decision("low", NO_POND_TEMPERATURE)
-    assert decide(g, 15.0, pond_age=3600) == Decision("low", NO_POND_TEMPERATURE)
+    assert decide(g, 15.0, pond_age=7 * 3600) == Decision("low", NO_POND_TEMPERATURE)
+    # a sensor that only reports changes may be quiet for hours: that is not missing
+    assert decide(g, 15.0, "off", pond_age=3 * 3600) == Decision("off", PLAN)
 
 
 def test_far_below_gives_high_or_low_when_high_is_not_allowed():
