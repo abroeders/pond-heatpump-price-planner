@@ -1,6 +1,7 @@
 // Entry point: defines the elements and registers the card in the card picker.
 
-import { CARD_TAG, EDITOR_TAG, GAUGE_TAG, PondHeatpumpPlannerCard } from "./card";
+import { CARD_TAG, EDITOR_TAG, GAUGE_TAG, PLAN_CHART_TAG, PondHeatpumpPlannerCard } from "./card";
+import { PhpcPlanChart } from "./plan-chart";
 import { PondHeatpumpPlannerCardEditor } from "./editor";
 import { PhpcGauge } from "./gauge";
 
@@ -9,6 +10,7 @@ function define(tag: string, element: CustomElementConstructor) {
 }
 
 define(GAUGE_TAG, PhpcGauge);
+define(PLAN_CHART_TAG, PhpcPlanChart);
 define(EDITOR_TAG, PondHeatpumpPlannerCardEditor);
 define(CARD_TAG, PondHeatpumpPlannerCard);
 

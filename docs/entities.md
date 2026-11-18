@@ -55,8 +55,8 @@ The settings are stored by the integration and survive a restart.
 quarter), `price` (effective €/kWh), `known` (false where the price comes from the price forecast) and, with
 solar configured, `surplus` (kW). It is not stored in the recorder.
 
-**`pond_history`**: the pond temperature of the last 24 h, one entry per quarter with `time` (end of the
-quarter) and `temp`. The card draws it in the thermostat. It is not stored in the recorder.
+**`pond_history`**: the pond temperature of the last 48 h, one entry per quarter with `time` (end of the
+quarter) and `temp`. The card draws the last 24 h in the thermostat and the measured part of the plan chart. It is not stored in the recorder.
 
 **`price_status`**:
 

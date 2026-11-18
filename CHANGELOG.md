@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-18
+
+### Added
+
+- The plan chart shows the measured pond temperature up to now (solid) and the prediction from now
+  (dashed) (#22).
+- A hairline with a tooltip in the plan chart: time, temperature, mode, price, expensive quarter and solar
+  surplus of the quarter under the pointer; also with the keyboard (#22).
+
+### Changed
+
+- The plan chart always spans `hours`: it ends where the known prices end and starts `hours` before that
+  (#22).
+- `pond_history` covers 48 hours instead of 24 (#22).
+
 ## [0.4.0] - 2026-11-18
 
 ### Added
@@ -87,7 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.1.0...v0.2.0

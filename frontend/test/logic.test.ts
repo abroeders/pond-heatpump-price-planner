@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { scales, runs, summary, timeTicks } from "../src/chart";
-import { legendItems } from "../src/plan-chart";
+import { QUARTER, chartWindow, hoverInfo, measuredPath, predictedPath, quarterAt, scales, runs, summary, timeTicks } from "../src/chart";
+import { legendItems, tooltipLines } from "../src/plan-chart";
 import { chartWidth, columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
 import { plannerDevices, resolvePlanner } from "../src/entities";
@@ -10,6 +10,8 @@ import { buildViewModel } from "../src/viewmodel";
 import { DEVICE, fakeHass } from "./fixtures";
 
 const config = { type: "custom:pond-heatpump-planner-card", device_id: DEVICE, heat_pump: { pump_speed: "sensor.pump_speed", pump_power: "sensor.pump_power", fan: "binary_sensor.fan", flow: "binary_sensor.flow", pump_fault: "binary_sensor.pump_fault" } };
+
+const NOW = Date.parse("2026-11-17T10:05:00Z"); // inside the fixture plan
 
 describe("time ticks and sparkline", () => {
   it("ticks at local 0, 6, 12 and 18 h, marking midnights", () => {
@@ -40,7 +42,7 @@ describe("time ticks and sparkline", () => {
   });
 
   it("reads the pond history from the mode sensor", () => {
-    const vm = buildViewModel(fakeHass(), config);
+    const vm = buildViewModel(fakeHass(), config, NOW);
     expect(vm.gauge!.history.length).toBe(96);
     expect(vm.gauge!.history[0].t).toBeLessThan(vm.gauge!.history[95].t);
   });
@@ -118,6 +120,66 @@ describe("chart", () => {
   });
 });
 
+describe("chart window, measured line and hover", () => {
+  const H = 3600e3;
+  const t0 = Date.parse("2026-11-18T09:07:00Z");
+
+  it("ends at the plan end and spans the hours back from there", () => {
+    const planEnd = Date.parse("2026-11-18T23:00:00Z");
+    const w = chartWindow(t0, planEnd, 36);
+    expect(w.end).toBe(planEnd);
+    expect(w.end - w.start).toBe(36 * H);
+    // a plan longer than the span: now … now + hours
+    const long = chartWindow(t0, t0 + 35 * H, 12);
+    expect(long.start).toBe(Date.parse("2026-11-18T09:00:00Z"));
+    expect(long.end - long.start).toBe(12 * H);
+  });
+
+  function model(hours = 36) {
+    const start = Date.parse("2026-11-18T09:00:00Z");
+    const quarters = Array.from({ length: 8 }, (_, i) => ({
+      t: start + i * QUARTER, mode: (i < 4 ? "low" : "off") as "low" | "off", temp: 14.5 + i * 0.01,
+      price: 0.3, known: i < 6, surplus: null,
+    }));
+    const history = [
+      ...Array.from({ length: 8 }, (_, i) => ({ t: start - 4 * H + i * QUARTER, temp: 14.0 })),
+      ...Array.from({ length: 4 }, (_, i) => ({ t: start - H + (i + 1) * QUARTER, temp: 14.2 })), // after a 1 h gap
+    ];
+    return { quarters, target: 14.5, band: 0.25, now: t0, hours, history, pond: 14.3 };
+  }
+
+  it("draws the measured line up to now with gaps, and the prediction from now", () => {
+    const plan = model();
+    const s = scales(plan, 600, 220);
+    expect(s.end).toBe(plan.quarters[7].t + QUARTER);
+    expect(s.measured[s.measured.length - 1]).toEqual({ t: t0, temp: 14.3 });
+    expect(measuredPath(s).match(/M/g)).toHaveLength(2); // the gap starts a new segment
+    const predicted = predictedPath(plan, s);
+    expect(predicted.startsWith(`M${s.x(t0).toFixed(1)} ${s.yTemp(14.3).toFixed(1)}`)).toBe(true);
+    expect(s.tempMin).toBeLessThanOrEqual(14.0); // the scale includes the measured values
+  });
+
+  it("maps the pointer to a quarter and describes it", () => {
+    const plan = model();
+    const s = scales(plan, 600, 220);
+    expect(quarterAt(s, s.x(plan.quarters[2].t) + 1)).toBe(plan.quarters[2].t);
+    expect(quarterAt(s, -50)).toBe(s.start);
+    expect(quarterAt(s, 9999)).toBe(s.end - QUARTER);
+    const planned = hoverInfo(plan, s, plan.quarters[6].t);
+    expect(planned).toMatchObject({ mode: "off", temp: 14.56, measured: false, known: false, price: 0.3 });
+    const past = hoverInfo(plan, s, Date.parse("2026-11-18T08:30:00Z"));
+    expect(past).toMatchObject({ temp: 14.2, measured: true, mode: null, price: null });
+    const empty = hoverInfo(plan, s, s.start);
+    expect(empty).toMatchObject({ temp: null, mode: null, price: null });
+    const lines = tooltipLines(planned, localizer("en"), "en");
+    expect(lines[1]).toBe("14.56 °C predicted");
+    expect(lines).toContain("mode: off");
+    expect(lines).toContain("€ 0.300/kWh (forecast)");
+    expect(tooltipLines(past, localizer("nl"), "nl")[1]).toBe("14.20 °C gemeten");
+    expect(tooltipLines(empty, localizer("en"), "en")).toHaveLength(1);
+  });
+});
+
 describe("hours and legend", () => {
   it("keeps 24, 36 or 48 hours of the plan", () => {
     const long = fakeHass({ "sensor.pond_mode": { state: "low", attributes: { plan: planAttr(200) }, last_updated: "x" } });
@@ -127,12 +189,13 @@ describe("hours and legend", () => {
   });
 
   it("lists optional legend items only when present", () => {
-    const vm = buildViewModel(fakeHass(), config);
+    const vm = buildViewModel(fakeHass(), config, NOW);
     const keys = legendItems(vm.plan!).map((i) => i.key);
-    expect(keys).toEqual(["legend_pond", "target", "band", "low", "high", "price", "legend_expensive", "legend_solar", "now", "legend_forecast"]);
+    expect(keys).toEqual(["legend_measured", "legend_pond", "target", "band", "low", "high", "price", "legend_expensive", "legend_solar", "now", "legend_forecast"]);
     const flat = planAttr(8).map((q) => ({ ...q, price: 0.3, known: true, surplus: undefined }));
     const plain = buildViewModel(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { plan: flat }, last_updated: "x" } }), config);
     const plainKeys = legendItems(plain.plan!).map((i) => i.key);
+    expect(plainKeys).not.toContain("legend_measured"); // no history
     expect(plainKeys).not.toContain("legend_solar");
     expect(plainKeys).not.toContain("legend_forecast");
     expect(plainKeys).not.toContain("legend_expensive");

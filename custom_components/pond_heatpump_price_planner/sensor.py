@@ -26,7 +26,7 @@ from .core.model import MODES
 from .entity import PlannerEntity
 
 PLAN_ATTRIBUTE_QUARTERS = 144
-POND_HISTORY_HOURS = 24
+POND_HISTORY_HOURS = 48  # the plan chart can show up to about 37 h of history
 
 
 def _ts(epoch: float | None) -> datetime | None:
@@ -59,7 +59,7 @@ def _plan_list(c: PlannerCoordinator) -> list[dict[str, Any]]:
 
 
 def _pond_history(c: PlannerCoordinator) -> list[dict[str, Any]]:
-    """Pond temperature at the end of each stored quarter of the last 24 hours."""
+    """Pond temperature at the end of each stored quarter of the last 48 hours."""
     since = time.time() - POND_HISTORY_HOURS * 3600
     return [
         {"time": _ts(s.t + 900).isoformat(), "temp": round(s.pond, 2)}
