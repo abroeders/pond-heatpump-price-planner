@@ -30,9 +30,27 @@ describe("card", () => {
     expect(root.querySelector("phpc-gauge")).not.toBeNull();
     expect(root.querySelector(".chart")).not.toBeNull();
     expect(root.querySelector(".figures")).not.toBeNull();
-    const order = [...root.querySelectorAll(".section")].map((s: Element) => s.firstElementChild?.tagName.toLowerCase() ?? "");
-    expect(order[0]).toBe("svg");
-    expect(order[1]).toBe("phpc-gauge");
+    const order = [...root.querySelectorAll(".section")].map((s: Element) => s.classList[1]);
+    expect(order).toEqual(["heat_pump", "thermostat", "plan", "side", "model"]);
+    const side = root.querySelector(".section.side");
+    expect(side.querySelector(".figures")).not.toBeNull();
+    expect(side.querySelector(".switches")).not.toBeNull();
+  });
+
+  it("offers grid options and switches layout with its width", async () => {
+    const card = await mount();
+    expect(card.getGridOptions()).toEqual({ columns: "full", min_columns: 6, rows: "auto" });
+    const haCard = () => card.shadowRoot.querySelector("ha-card");
+    expect(haCard().classList.contains("narrow")).toBe(true);
+    card.resized(700);
+    await card.updateComplete;
+    expect(haCard().classList.contains("medium")).toBe(true);
+    expect(card.shadowRoot.querySelector(".section.plan").getAttribute("style")).toContain("span 2");
+    card.resized(1200);
+    await card.updateComplete;
+    expect(haCard().classList.contains("wide")).toBe(true);
+    expect(card.shadowRoot.querySelector(".section.plan").getAttribute("style")).toContain("span 3");
+    expect(card.shadowRoot.querySelector(".section.side").getAttribute("style")).toContain("span 1");
   });
 
   it("animations follow the boolean entities", async () => {

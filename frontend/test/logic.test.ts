@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { scales, runs, summary } from "../src/chart";
 import { legendItems } from "../src/plan-chart";
+import { columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
 import { plannerDevices, resolvePlanner } from "../src/entities";
 import { angleOf, clampStep, ring, tempAt, START, SWEEP } from "../src/gauge-math";
@@ -100,6 +101,25 @@ describe("hours and legend", () => {
     expect(plainKeys).not.toContain("legend_solar");
     expect(plainKeys).not.toContain("legend_forecast");
     expect(plainKeys).not.toContain("legend_expensive");
+  });
+});
+
+describe("layout", () => {
+  it("picks the layout at the thresholds", () => {
+    expect(layoutFor(320)).toBe("narrow");
+    expect(layoutFor(559)).toBe("narrow");
+    expect(layoutFor(560)).toBe("medium");
+    expect(layoutFor(899)).toBe("medium");
+    expect(layoutFor(900)).toBe("wide");
+    expect([columnsOf("narrow"), columnsOf("medium"), columnsOf("wide")]).toEqual([1, 2, 3]);
+  });
+
+  it("spans blocks so that every row is full", () => {
+    expect(spanFor("medium", "plan")).toBe(2);
+    expect(spanFor("wide", "plan")).toBe(3);
+    expect(spanFor("wide", "model")).toBe(3);
+    for (const b of ["heat_pump", "thermostat", "side"] as const) expect(spanFor("wide", b)).toBe(1);
+    for (const b of ["heat_pump", "thermostat", "plan", "side", "model"] as const) expect(spanFor("narrow", b)).toBe(1);
   });
 });
 

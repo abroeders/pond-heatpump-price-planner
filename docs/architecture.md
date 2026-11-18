@@ -798,6 +798,8 @@ classDiagram
         +getCardSize() int
         +getConfigElement()$
         +getStubConfig(hass)$
+        +getGridOptions()
+        +resized(width)
     }
     class PondHeatpumpPlannerCardEditor {
         <<LitElement, ha-form>>
@@ -842,6 +844,12 @@ classDiagram
         <<module>>
         +localizer(language) Localizer
     }
+    class layout {
+        <<module>>
+        +layoutFor(width) Layout
+        +spanFor(layout, block) int
+        +GRID_OPTIONS
+    }
     PondHeatpumpPlannerCard ..> viewmodel : on hass change
     viewmodel ..> entities
     PondHeatpumpPlannerCard o-- PhpcGauge
@@ -849,6 +857,7 @@ classDiagram
     templates ..> chart
     PhpcGauge ..> gaugeMath
     PondHeatpumpPlannerCard ..> localize
+    PondHeatpumpPlannerCard ..> layout : ResizeObserver width
     PondHeatpumpPlannerCardEditor ..> entities
 ```
 
