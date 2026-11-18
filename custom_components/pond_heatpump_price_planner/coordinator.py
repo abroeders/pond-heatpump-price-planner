@@ -48,6 +48,7 @@ from .const import (
     OPT_OFFSET_HIGH,
     OPT_OFFSET_LOW,
     OPT_OFFSET_OFF,
+    OPT_OFFSET_START,
     OPT_RUN_THRESHOLD,
     OPT_SETTLE,
     OPT_START_PENALTY,
@@ -158,6 +159,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                     "off": self.options[OPT_OFFSET_OFF],
                     "low": self.options[OPT_OFFSET_LOW],
                     "high": self.options[OPT_OFFSET_HIGH],
+                    "start": self.options[OPT_OFFSET_START],
                 }
             ),
         )
@@ -171,6 +173,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         self._unsubs: list = []
         self._replan_handle = None
         self._last_mode: str | None = None
+        self._started = True  # whether the compressor runs (power at least low_w)
 
     # --- lifecycle ---------------------------------------------------------------------------------
     @property
@@ -259,6 +262,12 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             self.power.add(t, value)
             if value is not None:
                 self.flow.update(t, power=value)
+            # started: drop the start setpoint at once. A stop is handled at the next quarter, so a short
+            # power dip (e.g. defrosting) does not send the start setpoint.
+            if self._running(value) and not self._started and self.data.decision is not None:
+                self._started = True
+                if self.settings[SET_CONTROL]:
+                    self.hass.async_create_task(self._async_reapply())
         if entity_id == self.links.get(CONF_INLET) and value is not None:
             self.flow.update(t, t_in=value)
             if self.data.decision is not None and self.settings[SET_CONTROL]:
@@ -363,12 +372,14 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 allow_high=bool(self.options[OPT_ALLOW_HIGH]),
                 previous=self._last_mode or "off",
             )
+            self._started = self._running(power)
             applied = await self.controller.async_apply(
                 decision,
                 self.inputs.inlet(),
                 pond if pond is not None else target,
                 bool(self.settings[SET_CONTROL]),
                 now,
+                self._started,
             )
             if applied.reason in ("sent", "unchanged"):
                 self._last_mode = decision.mode
@@ -396,6 +407,10 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             d.updated = now
             self.async_set_updated_data(d)
 
+    def _running(self, power_w: float | None) -> bool:
+        """Whether the compressor runs; without a power reading assume it does (no start setpoint)."""
+        return power_w is None or self.classifier.mode(power_w) != "off"
+
     async def _async_reapply(self) -> None:
         """The inlet temperature changed: the setpoint for the same decision may change too."""
         async with self._lock:
@@ -403,7 +418,12 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             if self.data.decision is None or pond is None:
                 return
             self.data.applied = await self.controller.async_apply(
-                self.data.decision, self.inputs.inlet(), pond, bool(self.settings[SET_CONTROL]), time.time()
+                self.data.decision,
+                self.inputs.inlet(),
+                pond,
+                bool(self.settings[SET_CONTROL]),
+                time.time(),
+                self._started,
             )
         self.async_set_updated_data(self.data)
 

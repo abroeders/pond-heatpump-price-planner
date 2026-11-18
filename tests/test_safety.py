@@ -85,6 +85,24 @@ def test_offset_setpoint(mode, inlet, pond, expected):
     assert OffsetSetpoint().setpoint(mode, inlet, pond, min_temp=7, max_temp=60, step=1) == expected
 
 
+def test_start_offset_while_not_running():
+    sp = OffsetSetpoint()
+    # inlet 14: a stopped heat pump only starts on 16 (measured on the reference heat pump)
+    assert sp.setpoint("low", 14.0, 14.6, 7, 60, 1, running=False) == 16
+    assert sp.setpoint("high", 14.0, 14.6, 7, 60, 1, running=False) == 16
+    assert sp.setpoint("off", 14.0, 14.6, 7, 60, 1, running=False) == 12
+    assert sp.setpoint("low", 14.0, 14.6, 7, 60, 1, running=True) == 14
+    # the start offset never lowers the mode's setpoint
+    assert (
+        OffsetSetpoint({"off": -2, "low": 0, "high": 3, "start": 2}).setpoint(
+            "high", 14.0, 14.6, 7, 60, 1, False
+        )
+        == 17
+    )
+    # without a start offset nothing changes
+    assert OffsetSetpoint({"off": -2, "low": 0, "high": 1}).setpoint("low", 14.0, 14.6, 7, 60, 1, False) == 14
+
+
 def test_offset_setpoint_half_degree_step_and_custom_offsets():
     sp = OffsetSetpoint({"off": -3, "low": 0.5, "high": 2})
     assert sp.setpoint("low", 14.3, 15.0, 7, 60, 0.5) == 15.0

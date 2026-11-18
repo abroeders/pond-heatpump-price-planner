@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A stopped heat pump is started with a higher setpoint: new option `offset_start` (default +2 K) for low and
+  high while the power is below `low_w`; once the heat pump runs, the mode's setpoint is sent at once. Before,
+  the planner planned low but a stopped heat pump did not start on the low setpoint (#24).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added

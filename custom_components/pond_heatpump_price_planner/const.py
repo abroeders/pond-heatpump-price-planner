@@ -38,6 +38,7 @@ OPT_HORIZON = "horizon"
 OPT_OFFSET_OFF = "offset_off"
 OPT_OFFSET_LOW = "offset_low"
 OPT_OFFSET_HIGH = "offset_high"
+OPT_OFFSET_START = "offset_start"
 OPT_LOW_W = "low_w"
 OPT_HIGH_W = "high_w"
 OPT_COP_WINDOW = "cop_window"
@@ -61,6 +62,7 @@ DEFAULT_OPTIONS = {
     OPT_OFFSET_OFF: -2,
     OPT_OFFSET_LOW: 0,
     OPT_OFFSET_HIGH: 1,
+    OPT_OFFSET_START: 2,
     OPT_LOW_W: 150,
     OPT_HIGH_W: 650,
     OPT_COP_WINDOW: 14,
