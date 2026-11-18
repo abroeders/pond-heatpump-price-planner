@@ -53,7 +53,7 @@ async def test_mode_sensor_publishes_the_pond_history(hass: HomeAssistant, pond_
     now = time.time() // 900 * 900
     coordinator.store.replace_samples(
         sorted(
-            [Sample(t=now - 30 * 3600, pond=13.0, outdoor=5, power=0)]
+            [Sample(t=now - 50 * 3600, pond=13.0, outdoor=5, power=0)]
             + [Sample(t=now - 900 * i, pond=14.0 + i / 100, outdoor=5, power=0) for i in range(1, 5)]
             + [Sample(t=now - 1800 - 1, pond=None, outdoor=5, power=0)],
             key=lambda x: x.t,
@@ -62,7 +62,7 @@ async def test_mode_sensor_publishes_the_pond_history(hass: HomeAssistant, pond_
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
     history = state(hass, "sensor", "mode").attributes["pond_history"]
-    assert [p["temp"] for p in history] == [14.04, 14.03, 14.02, 14.01]  # older than 24 h and gaps left out
+    assert [p["temp"] for p in history] == [14.04, 14.03, 14.02, 14.01]  # older than 48 h and gaps left out
 
 
 async def test_control_on_sends_the_setpoint(hass: HomeAssistant, pond_states) -> None:
