@@ -57,13 +57,19 @@ The decision is pure Python in `core/safety.py`, without Home Assistant, and is 
 
 ```
 setpoint = clamp(round(inlet) + offset[mode], climate.min_temp, climate.max_temp)
+offset[low/high] = max(offset[mode], offset[start])   while the heat pump is not running (#24)
 ```
 
 | Option | Default |
 |---|---|
 | Offset off / low / high | −2 / 0 / +1 K |
+| Offset to start (#24) | +2 K |
 | Inlet temperature sensor | optional; without it `round(pond)` is used |
 
+- **Starting (#24).** A stopped heat pump does not start on the low setpoint. Measured on the reference
+  heat pump at inlet 14 °C: 14 and 15 did not start it within 6 minutes, 16 started it within 2 minutes
+  (history: 41 starts at +2, 44 at +3, 1 at +1, none at 0). Once running, it stays at low power on 14. So
+  while the power is below `low_w`, low and high use the start offset.
 - **Rounding.** The setpoint is rounded to the climate entity's `target_temp_step` (1 on the reference
   heat pump).
 - **Only changes are sent.** `climate.set_temperature` is called only when the computed setpoint differs
@@ -71,6 +77,8 @@ setpoint = clamp(round(inlet) + offset[mode], climate.min_temp, climate.max_temp
 - **When to re-apply.**
   - at every quarter;
   - when the inlet temperature changes (the whole-degree value moves, so "low" needs a new setpoint);
+  - when the heat pump starts (power reaches `low_w`), to drop the start setpoint at once (#24). A stop is
+    picked up at the next quarter, so a short power dip does not send the start setpoint;
   - when the control switch is turned on;
   - after a Home Assistant start, once the climate entity is available.
 - **Climate switched off.** If the climate entity's HVAC mode is `off`, the planner does not switch it on:
@@ -175,7 +183,8 @@ sequenceDiagram
 
 - `SafetyGuard`: every rule, the order of the rules, hysteresis at each limit, stale data, high not
   allowed.
-- `OffsetSetpoint`: rounding, clamping to min/max, step 1 and 0.5, missing inlet.
+- `OffsetSetpoint`: rounding, clamping to min/max, step 1 and 0.5, missing inlet, start offset while not
+  running (#24).
 - Controller (with a fake climate state): no call when unchanged, a call when different, no call in dry run
   or when HVAC mode is off, mismatch after 30 min and repair after 2 h.
 
