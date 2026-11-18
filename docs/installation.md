@@ -92,7 +92,7 @@ Open the new device (*Settings → Devices & services → Pond Heat Pump Price P
 | Entity | Set to |
 |---|---|
 | Thermostat | set the target temperature you want for the pond (5–28 °C) |
-| Band | how far the pond may move around the target; 0.25 K is a good start |
+| Band | how far the pond may move around the target; 0.25 °C is a good start |
 | Pond volume | the water volume in m³ (needed for the pond COP, heat loss and thermal power) |
 | Flow through the heat pump | the water flow through the heat pump in m³/h (needed for the flow COP) |
 | COP method | *Average of both* unless one method is known to be better for your pond |

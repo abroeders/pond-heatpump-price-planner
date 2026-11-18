@@ -48,7 +48,7 @@ export type HeatPumpKey = (typeof HEAT_PUMP_KEYS)[number];
 export interface CardConfig {
   type: string;
   device_id?: string;
-  hours?: 24 | 36;
+  hours?: 24 | 36 | 48;
   sections?: Section[];
   heat_pump?: Partial<Record<HeatPumpKey, string>>;
 }

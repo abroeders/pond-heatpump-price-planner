@@ -29,7 +29,7 @@ NUMBERS: tuple[SettingNumberDescription, ...] = (
     SettingNumberDescription(
         key="band",
         setting=SET_BAND,
-        native_unit_of_measurement=UnitOfTemperature.KELVIN,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # a difference, shown in °C for readability
         native_min_value=0.1,
         native_max_value=1.0,
         native_step=0.05,

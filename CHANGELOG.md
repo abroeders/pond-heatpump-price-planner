@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Plan chart of the card: 48 hours option and a legend below the chart (#14).
+
+### Changed
+
+- The band is shown in °C (number entity and card) instead of K; the value is unchanged (#14).
+
 ## [0.2.0] - 2026-11-17
 
 ### Added
