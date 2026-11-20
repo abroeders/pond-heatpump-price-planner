@@ -58,6 +58,10 @@ export interface Quarter {
 export interface HistoryPoint {
   t: number;
   temp: number;
+  /** measured mode of the quarter that ends at t, when known */
+  mode?: Mode | null;
+  /** price of the quarter that ends at t (€/kWh), when known */
+  price?: number | null;
 }
 
 export interface PlanModel {
@@ -119,7 +123,12 @@ const MODES: Mode[] = ["off", "low", "high"];
 function pondHistory(raw: unknown): HistoryPoint[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .map((p) => ({ t: Date.parse(p?.time), temp: Number(p?.temp) }))
+    .map((p) => ({
+      t: Date.parse(p?.time),
+      temp: Number(p?.temp),
+      mode: MODES.includes(p?.mode) ? (p.mode as Mode) : null,
+      price: p?.price === undefined || p?.price === null || !Number.isFinite(Number(p.price)) ? null : Number(p.price),
+    }))
     .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.temp))
     .sort((a, b) => a.t - b.t);
 }

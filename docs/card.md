@@ -45,7 +45,7 @@ The card adapts its layout to its own width:
 |---|---|
 | Heat pump | The drawing below, with live values and animations |
 | Thermostat | Ring with the pond temperature (triangle), the target (handle, drag it) and the band (green); target − / + and a vertical slider for the band (in °C); next start/stop and whether the planner controls the heat pump |
-| Plan | 24, 36 or 48 hours, ending where the known prices end (see below): measured pond temperature up to now (solid line), predicted pond temperature from now (dashed line), with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted); a legend below the chart explains each element |
+| Plan | 24, 36 or 48 hours, ending where the known prices end (see below): measured pond temperature up to now (solid line), predicted pond temperature from now (dashed line), with band (shaded) and target (dashed), mode per quarter (bars: blue low, orange high; lighter before now, where they show the measured mode), price (thin step line), expensive quarters (light background), solar quarters (yellow), now (red line) and where forecast prices begin (dotted); a legend below the chart explains each element |
 | Figures | Planned cost and energy for 24 h, share in expensive quarters, COP (method), heat loss, thermal power |
 | Switches | Insulation cover, control the heat pump |
 | Model | Collapsible: cooling coefficient, heating rates, prediction error, last learned, COP by outdoor temperature |
@@ -57,7 +57,8 @@ update.
 
 The right side of the chart is where the plan ends: the last known price (or the last forecast price, with a
 price forecast sensor). The left side is that moment minus `hours`. Between the left side and now the chart
-shows the measured pond temperature; from now on the plan.
+shows what happened: the measured pond temperature, the measured mode per quarter (lighter bars, from the mean
+power of the heat pump), the price and the expensive quarters. From now on the chart shows the plan.
 
 | Time | Prices known until | Chart (`hours: 36`) | Measured | Plan |
 |---|---|---|---|---|
@@ -67,7 +68,7 @@ shows the measured pond temperature; from now on the plan.
 When the plan is longer than `hours`, the chart shows now … now + `hours`.
 
 Point at the chart (or touch it on a phone) for a hairline with the values of that quarter: day and time,
-pond temperature (measured or predicted), mode, price (with "forecast" for forecast prices), and whether it is
+pond temperature (measured or predicted), mode (measured or planned), price (with "forecast" for forecast prices), and whether it is
 an expensive quarter or has solar surplus. With the keyboard: focus the chart (Tab), then ← and → move one
 quarter, Home and End jump to the start and end, Escape hides the hairline.
 
