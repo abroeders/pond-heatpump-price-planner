@@ -7,6 +7,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.2] - 2026-11-20
+
 ### Fixed
 
 - The flow-method COP got no value: the hourly timer runs just after the full hour, and the finished hour was
@@ -138,7 +140,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.1...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...HEAD
+[2026.11.2]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.1...v2026.11.2
 [2026.11.1]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.0...v2026.11.1
 [2026.11.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.1...v2026.11.0
 [0.5.1]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.0...v0.5.1
