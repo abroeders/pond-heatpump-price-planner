@@ -460,7 +460,7 @@ classDiagram
         +float run_threshold_w
         +float settle_s
         +update(t, power, t_in, t_out, outdoor, energy)
-        +close_hour(t) Optional~CopBucket~
+        +close_hour(t) List~CopBucket~
     }
     class CopBucket {
         +float t
@@ -516,8 +516,9 @@ sequenceDiagram
     HA->>Acc: update(t, power / t_in / t_out / outdoor / energy)
     Acc->>Acc: integrate the previous state up to t (step function)
     Acc->>Acc: count only if running and settled, split counter increases
-    HA->>Acc: close_hour(t) at every full hour
-    Acc-->>HA: CopBucket of the past hour
+    Acc->>Acc: crossing an hour: keep the finished bucket (#30)
+    HA->>Acc: close_hour(t) just after every full hour
+    Acc-->>HA: CopBuckets of all hours finished since the last call
     HA->>Store: keep bucket (42 days)
     HA->>Calc: cop_flow(buckets, flow, now, window)
     HA->>Calc: fit_loss(hours, capacity), cop_pond(hours, loss, capacity, now, window)

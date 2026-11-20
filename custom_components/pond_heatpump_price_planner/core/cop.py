@@ -96,6 +96,7 @@ class FlowAccumulator:
         self._since_energy_counted: list[tuple[CopBucket, float]] = []
         self._power_kwh_fallback = True  # integrate power until a counter value arrives
         self.bucket: CopBucket | None = None
+        self._finished: list[CopBucket] = []  # hours crossed since the last close_hour
 
     def _counted(self, t: float) -> bool:
         return (
@@ -116,6 +117,8 @@ class FlowAccumulator:
         while t < until:
             hour = t // 3600 * 3600
             if self.bucket is None or self.bucket.t != hour:
+                if self.bucket is not None:
+                    self._finished.append(self.bucket)
                 self.bucket = CopBucket(hour)
             seg_end = min(until, hour + 3600)
             # the settle point may fall inside the segment
@@ -176,12 +179,16 @@ class FlowAccumulator:
         self._since_energy_total = 0.0
         self._since_energy_counted = []
 
-    def close_hour(self, t: float) -> CopBucket | None:
-        """Integrate up to t (an hour boundary) and return the finished bucket of the previous hour."""
+    def close_hour(self, t: float) -> list[CopBucket]:
+        """Integrate up to t and return the buckets of all hours finished since the last call.
+
+        t may lie after the hour boundary (a late timer), and an update may already have crossed it.
+        """
         self._advance(t)
-        finished = self.bucket if self.bucket is not None and self.bucket.t < t // 3600 * 3600 else None
-        if finished is not None:
+        if self.bucket is not None and self.bucket.t < t // 3600 * 3600:
+            self._finished.append(self.bucket)
             self.bucket = None
+        finished, self._finished = self._finished, []
         return finished
 
 

@@ -39,7 +39,7 @@ def test_accumulator_skips_settling_time_and_idle():
     acc = FlowAccumulator(run_threshold_w=100, settle_s=1200)
     acc.update(0, power=5, t_in=14, t_out=14)
     acc.update(600, power=400, t_out=15)  # start at 10 min
-    b = acc.close_hour(H)
+    (b,) = acc.close_hour(H)
     # counted from 600 + 1200 = 1800 to 3600: half an hour
     assert b.seconds == pytest.approx(1800)
     assert b.heat_per_flow_kwh == pytest.approx(1.163 * 1 * 0.5)
@@ -53,11 +53,11 @@ def test_accumulator_uses_energy_counter_and_ignores_reset():
     acc.update(1800, energy=100.3)  # 0.3 kWh in the first half hour, all counted
     acc.update(2700, power=5)  # stops: the rest of the counter increase is only partly counted
     acc.update(3600, energy=100.5)
-    b = acc.close_hour(3600)
+    (b,) = acc.close_hour(3600)
     assert b.elec_kwh == pytest.approx(0.3 + 0.2 * 900 / 1800)
     acc.update(3700, power=400, energy=0.0)  # counter reset
     acc.update(5400, energy=0.2)
-    b2 = acc.close_hour(2 * H)
+    (b2,) = acc.close_hour(2 * H)
     assert b2.elec_kwh == pytest.approx(0.2)
 
 
@@ -65,7 +65,31 @@ def test_accumulator_needs_both_water_temperatures():
     acc = FlowAccumulator(settle_s=0)
     acc.update(0, power=400, t_in=14)
     acc.update(1800, power=400)
-    assert acc.close_hour(H).seconds == 0
+    assert acc.close_hour(H)[0].seconds == 0
+
+
+def test_late_timer_keeps_the_finished_hour():
+    acc = FlowAccumulator(settle_s=0)
+    acc.update(0, power=400, t_in=14, t_out=15)
+    (b,) = acc.close_hour(H + 1)  # the hourly timer runs at hh:00:01
+    assert b.t == 0 and b.seconds == pytest.approx(H)
+    assert acc.close_hour(2 * H + 1)[0].seconds == pytest.approx(H)
+
+
+def test_update_after_the_hour_keeps_the_finished_hour():
+    acc = FlowAccumulator(settle_s=0)
+    acc.update(0, power=400, t_in=14, t_out=15)
+    acc.update(H + 0.5, power=410)  # a sensor update just after the hour, before the timer
+    (b,) = acc.close_hour(H + 1)
+    assert b.t == 0 and b.seconds == pytest.approx(H)
+
+
+def test_one_update_crossing_several_hours_keeps_them_all():
+    acc = FlowAccumulator(settle_s=0)
+    acc.update(0, power=400, t_in=14, t_out=15)
+    acc.update(3 * H + 60, power=400)
+    assert [b.t for b in acc.close_hour(3 * H + 61)] == [0, H, 2 * H]
+    assert acc.close_hour(3 * H + 62) == []
 
 
 def test_bucket_roundtrip():
@@ -82,8 +106,7 @@ def synthetic_buckets(days: int, cop: float, flow: float, quantum: float, seed: 
     out = []
     for i in range(days * 96):
         t = i * QUARTER
-        if b := acc.close_hour(t):
-            out.append(b)
+        out += acc.close_hour(t)
         on = (i % 96) < 48
         t_in = 14 + 0.3 * math.sin(i / 10) + rng.uniform(-0.5, 0.5)
         t_out = t_in + (true_dt if on else 0)
@@ -118,8 +141,7 @@ def test_reference_flow_method(reference):
     rows, _ = reference_hours(reference)
     acc, buckets = FlowAccumulator(), []
     for r in rows:
-        if b := acc.close_hour(r["t"]):
-            buckets.append(b)
+        buckets += acc.close_hour(r["t"])
         acc.update(r["t"], power=r["power_w"], t_in=r["water_in"], t_out=r["water_out"], outdoor=r["air_in"])
     res = cop_flow(buckets, 3.0, rows[-1]["t"] + QUARTER, window_days=40)
     assert res.cop == pytest.approx(5.3, abs=0.2)
