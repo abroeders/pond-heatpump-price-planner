@@ -7,6 +7,12 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- The flow-method COP got no value: the hourly timer runs just after the full hour, and the finished hour was
+  dropped instead of stored. Every finished hour is now kept, also when a sensor update crosses the hour
+  first (#30).
+
 ## [2026.11.1] - 2026-11-20
 
 ### Added
