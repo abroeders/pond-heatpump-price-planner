@@ -253,3 +253,18 @@ async def test_entry_without_language_option_is_automatic(hass: HomeAssistant, p
     await hass.async_block_till_done()
     hass.data["_entry_id"] = entry.entry_id
     assert state(hass, "sensor", "mode").attributes["language"] == "auto"
+
+
+async def test_flow_cop_shows_its_inlet_and_outlet_correction(hass: HomeAssistant, pond_states) -> None:
+    entry = await setup_in(hass, "en", "auto")
+    attrs = state(hass, "sensor", "cop_flow").attributes
+    assert attrs["inlet"] == "heat_pump"
+    assert attrs["offset_source"] == "none" and attrs["outlet_offset"] is None
+    assert attrs["calibrating"] is True and attrs["calibration_hours"] == 0
+    options = {**entry.options, "cop_inlet": "pond", "cop_outlet_correction": 0.28}
+    hass.config_entries.async_update_entry(entry, options=options)
+    await hass.async_block_till_done()  # the update listener reloads the entry
+    attrs = state(hass, "sensor", "cop_flow").attributes
+    assert attrs["inlet"] == "pond"
+    assert attrs["offset_source"] == "manual" and attrs["outlet_offset"] == 0.28
+    assert attrs["calibrating"] is False

@@ -13,6 +13,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_AIR_INLET,
+    CONF_CIRCULATION,
     CONF_CLIMATE,
     CONF_ENERGY,
     CONF_INLET,
@@ -26,12 +27,15 @@ from .const import (
     CONF_SURPLUS,
     CONF_SURPLUS_TYPE,
     CONF_WEATHER,
+    COP_INLETS,
     DEFAULT_NAME,
     DEFAULT_OPTIONS,
     DOMAIN,
     LANGUAGE_OPTIONS,
     OPT_ALLOW_HIGH,
     OPT_BASE_LOAD,
+    OPT_COP_INLET,
+    OPT_COP_OUTLET_CORRECTION,
     OPT_COP_WINDOW,
     OPT_FEED_IN_ADDITION,
     OPT_FEED_IN_MULTIPLIER,
@@ -113,6 +117,7 @@ STEP_COP = vol.Schema(
         vol.Optional(CONF_OUTLET): _entity("sensor", "temperature"),
         vol.Optional(CONF_ENERGY): _entity("sensor", "energy"),
         vol.Optional(CONF_AIR_INLET): _entity("sensor", "temperature"),
+        vol.Optional(CONF_CIRCULATION): _entity("binary_sensor"),
     }
 )
 
@@ -220,6 +225,10 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Required(OPT_COP_WINDOW): _number(7, 42, 1, "d"),
         vol.Required(OPT_RUN_THRESHOLD): _number(0, 2000, 10, "W"),
         vol.Required(OPT_SETTLE): _number(0, 120, 1, "min"),
+        vol.Required(OPT_COP_INLET): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=list(COP_INLETS), translation_key=OPT_COP_INLET)
+        ),
+        vol.Optional(OPT_COP_OUTLET_CORRECTION): _number(-2, 2, 0.01, "K"),
         vol.Required(OPT_LANGUAGE): selector.SelectSelector(
             selector.SelectSelectorConfig(options=list(LANGUAGE_OPTIONS), translation_key=OPT_LANGUAGE)
         ),
