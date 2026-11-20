@@ -7,6 +7,12 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- The plan chart keeps the history visible left of now: the measured mode per quarter (lighter bars), the
+  prices and the expensive quarters; the tooltip of a past quarter shows its mode and price. The
+  `pond_history` attribute carries the measured `mode` and the `price` of each quarter (#34).
+
 ## [2026.11.3] - 2026-11-20
 
 ### Added

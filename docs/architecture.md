@@ -877,6 +877,8 @@ classDiagram
         +chartWindow(now, planEnd, hours) ChartWindow
         +scales(plan, w, h) ChartScales
         +measuredPath(scales) / predictedPath(plan, scales)
+        +pastQuarters(plan, start) list~PastQuarter~
+        +pricePath(plan, scales)
         +quarterAt(scales, x) / hoverInfo(plan, scales, t)
         +timeTicks(start, end)
         +runs(quarters)
@@ -973,9 +975,12 @@ sequenceDiagram
     PC->>C: scales(plan): chartWindow(now, plan end, hours)
     C-->>PC: window end − hours … end, measured points up to now
     PC->>PC: draw measured (solid) and predicted (dashed) lines
+    C->>C: pastQuarters(): measured mode and price per quarter before the plan (#34)
+    C-->>PC: past quarters, their expensive marking, price range incl. the past
+    PC->>PC: draw past mode bars (lighter), expensive quarters, one price line through past and plan
     U->>PC: pointermove / ← →
     PC->>C: quarterAt(x) → hoverInfo(quarter)
-    C-->>PC: time, temperature (measured or predicted), mode, price
+    C-->>PC: time, temperature (measured or predicted), mode, price (also for past quarters)
     PC->>PC: hairline, dot and tooltip (only the chart re-renders)
     U->>PC: pointerleave (mouse), tap outside, Escape
     PC->>PC: hide
