@@ -37,6 +37,7 @@ New module `language.py` (Home Assistant side; `core/` is not involved):
 ```python
 LANGUAGES = ("en", "nl")
 
+
 class PlannerTexts:
     """Names and attribute texts of the planner in one language, from the integration's own translations."""
 
