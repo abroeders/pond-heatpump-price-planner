@@ -24,9 +24,14 @@ export function withUnit(value: number | null, unit: string | undefined, digits 
   return unit ? `${value.toFixed(digits)} ${unit}` : value.toFixed(digits);
 }
 
+/** Clock time in 24-hour format. */
+export function clockText(ms: number, language: string): string {
+  return new Date(ms).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+}
+
 export function time(iso: string | null | undefined, language = "en"): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  return clockText(d.getTime(), language);
 }
