@@ -1,5 +1,6 @@
 // Scales and text summary of the plan chart. No DOM.
 
+import { clockText } from "./format";
 import type { Localizer } from "./localize";
 import type { HistoryPoint, Mode, PlanModel, Quarter } from "./viewmodel";
 
@@ -177,7 +178,6 @@ export function runs(quarters: Quarter[]): { mode: Mode; from: number; to: numbe
 }
 
 export function summary(plan: PlanModel, t: Localizer, language = "en"): string {
-  const hm = (ms: number) => new Date(ms).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
-  const parts = runs(plan.quarters).map((r) => `${t(r.mode)} ${hm(r.from)}–${hm(r.to)}`);
+  const parts = runs(plan.quarters).map((r) => `${t(r.mode)} ${clockText(r.from, language)}–${clockText(r.to, language)}`);
   return t("plan_summary", { parts: parts.join(", ") });
 }

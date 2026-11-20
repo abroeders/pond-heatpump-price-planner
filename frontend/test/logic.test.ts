@@ -8,6 +8,7 @@ import { angleOf, clampStep, ring, sparkline, tempAt, START, SWEEP } from "../sr
 import { localizer } from "../src/localize";
 import { buildViewModel } from "../src/viewmodel";
 import { DEVICE, fakeHass } from "./fixtures";
+import { clockText, time } from "../src/format";
 
 const config = { type: "custom:pond-heatpump-planner-card", device_id: DEVICE, heat_pump: { pump_speed: "sensor.pump_speed", pump_power: "sensor.pump_power", fan: "binary_sensor.fan", flow: "binary_sensor.flow", pump_fault: "binary_sensor.pump_fault" } };
 
@@ -102,6 +103,17 @@ describe("view model", () => {
 });
 
 describe("chart", () => {
+  it("formats 24-hour clock text and time strings", () => {
+    const afternoon = new Date(2026, 10, 17, 14, 0).getTime();
+    const midnight = new Date(2026, 10, 17, 0, 15).getTime();
+    expect(clockText(afternoon, "en")).toBe("14:00");
+    expect(clockText(midnight, "en")).toBe("00:15");
+    expect(clockText(afternoon, "nl")).toBe("14:00");
+    expect(clockText(midnight, "nl")).toBe("00:15");
+    expect(time(new Date(afternoon).toISOString(), "en")).toBe("14:00");
+    expect(time(new Date(midnight).toISOString(), "nl")).toBe("00:15");
+  });
+
   it("scales, marks expensive quarters and the known-price boundary", () => {
     const vm = buildViewModel(fakeHass(), config);
     const s = scales(vm.plan!, 600, 220);
@@ -116,7 +128,7 @@ describe("chart", () => {
   it("summarises runs for screen readers", () => {
     const vm = buildViewModel(fakeHass(), config);
     expect(runs(vm.plan!.quarters).map((r) => r.mode)).toEqual(["low", "off"]);
-    expect(summary(vm.plan!, localizer("en"), "en")).toMatch(/^Plan: low .*, off .*\.$/);
+    expect(summary(vm.plan!, localizer("en"), "en")).toMatch(/^Plan: low \d{2}:\d{2}–\d{2}:\d{2}, off .*\.$/);
   });
 });
 
@@ -177,6 +189,13 @@ describe("chart window, measured line and hover", () => {
     expect(lines).toContain("€ 0.300/kWh (forecast)");
     expect(tooltipLines(past, localizer("nl"), "nl")[1]).toBe("14.20 °C gemeten");
     expect(tooltipLines(empty, localizer("en"), "en")).toHaveLength(1);
+  });
+
+  it("uses 24-hour times in tooltip lines", () => {
+    const t = new Date(2026, 10, 18, 14, 0).getTime();
+    const info = { t, temp: null, measured: false, mode: null, price: null, known: true, expensive: false, surplus: null };
+    expect(tooltipLines(info, localizer("en"), "en")[0]).toMatch(/14:00–14:15$/);
+    expect(tooltipLines(info, localizer("nl"), "nl")[0]).toMatch(/14:00–14:15$/);
   });
 });
 

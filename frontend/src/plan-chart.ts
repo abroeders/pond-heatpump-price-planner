@@ -14,6 +14,7 @@ import {
   type ChartScales,
   type HoverInfo,
 } from "./chart";
+import { clockText } from "./format";
 import type { Localizer } from "./localize";
 import type { PlanModel } from "./viewmodel";
 
@@ -21,14 +22,12 @@ const DEFAULT_W = 600;
 const H = 220;
 const DAY_LABEL_W = 70; // room for a date label before the first midnight
 
-const hourText = (ms: number, language: string) =>
-  new Date(ms).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
 const dayText = (ms: number, language: string) =>
   new Date(ms).toLocaleDateString(language, { weekday: "short", day: "numeric", month: "short" });
 
 /** The lines of the tooltip for one quarter. */
 export function tooltipLines(info: HoverInfo, t: Localizer, language: string): string[] {
-  const lines = [`${dayText(info.t, language)} ${hourText(info.t, language)}–${hourText(info.t + QUARTER, language)}`];
+  const lines = [`${dayText(info.t, language)} ${clockText(info.t, language)}–${clockText(info.t + QUARTER, language)}`];
   if (info.temp !== null) lines.push(`${info.temp.toFixed(2)} °C ${t(info.measured ? "tip_measured" : "tip_predicted")}`);
   if (info.mode !== null) lines.push(`${t("tip_mode")}: ${t(info.mode)}`);
   if (info.price !== null) lines.push(`€ ${info.price.toFixed(3)}/kWh${info.known ? "" : ` (${t("tip_forecast")})`}`);
@@ -67,7 +66,7 @@ export function planChart(
     (k) => svg`<line x1=${s.x(k.t)} x2=${s.x(k.t)} y1="28" y2=${H - 28} class=${k.midnight ? "day" : "grid"}/>`,
   );
   const ticks = tickList.map(
-    (k) => svg`<text x=${s.x(k.t)} y=${H - 8} class="axis" text-anchor="middle">${hourText(k.t, language)}</text>`,
+    (k) => svg`<text x=${s.x(k.t)} y=${H - 8} class="axis" text-anchor="middle">${clockText(k.t, language)}</text>`,
   );
   // the date of every day in the chart: at the start and at each midnight
   const firstMidnight = tickList.find((k) => k.midnight);
@@ -97,7 +96,7 @@ export function planChart(
       <text x="4" y="20" class="axis">${s.tempMax.toFixed(1)} °C</text>
       <text x="4" y=${H - 30} class="axis">${s.tempMin.toFixed(1)}</text>
       <text x=${W - 4} y="20" class="axis" text-anchor="end">€ ${s.priceMax.toFixed(2)}</text>
-      <text x=${W - 4} y=${H - 30} class="axis" text-anchor="end">${s.priceMin.toFixed(2)}</text>
+      <text x=${W - 4} y=${H - 30} class="axis" text-anchor="end">€ ${s.priceMin.toFixed(2)}</text>
       ${ticks}
       ${days}
       ${hair}

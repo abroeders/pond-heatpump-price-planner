@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The card shows times of day in 24-hour format, also when Home Assistant uses English (it showed AM/PM).
+  The lower label of the price axis shows the euro sign too (#26).
+
 ## [0.5.1] - 2026-11-18
 
 ### Changed
