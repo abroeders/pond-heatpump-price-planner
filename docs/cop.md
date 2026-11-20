@@ -63,6 +63,32 @@ A counter reset is skipped. Without an energy sensor, $E = \int P\,dt$ is used.
 The integration stores the heat per unit of flow, $Q_1 / \dot V$, per hour. A changed flow setting
 therefore applies to the whole window at once.
 
+### Calibrating whole-degree sensors
+
+Whole-degree water sensors can be biased in a way that never averages out. On the W'eau heat pump the
+inlet stayed at 14 °C for days while the pond was 14.6 °C, and with the heat pump off the outlet read 0.28 K
+below the pond. With a difference of about 0.85 K this turned a COP of about 4.5 into 6.0. Two options help:
+
+- **`cop_inlet` = pond temperature sensor**: the pond sensor (resolution about 0.06 K) replaces the inlet.
+  The water reaches the heat pump at pond temperature.
+- **Outlet correction** $c$: while the heat pump has been off for at least 30 minutes and water flows, the
+  outlet should read the pond temperature. The integration averages the difference over the last 21 days:
+
+$$
+c = \frac{\int_{\text{off, flowing}} \big(T_{pond} - T_{out}\big)\,dt}{\int_{\text{off, flowing}} dt}
+\qquad
+\dot Q(t) = \dot V \cdot c_w \cdot \big(T_{out}(t) + c - T_{in}(t)\big)
+$$
+
+  A value in `cop_outlet_correction` replaces the learned one. With the optional `circulation` link,
+  moments without flow are left out.
+
+The integration stores the sums of $T_{out}$, $T_{in}$ and $T_{pond}$ per hour, so a changed inlet or
+correction applies to the whole window at once. Hours stored by versions before 2026.11.3 only work with the
+heat pump inlet. The attributes of `cop_flow` show the inlet, the correction and its source, and the
+calibration hours; `calibrating` is true while a learned correction rests on fewer than 6 hours. A planner
+that keeps the heat pump on low most of the time leaves few off hours, so the first hours can take days.
+
 **Sensitivity.** $\mathrm{COP}_1$ is proportional to $\dot V$. At 3 m³/h a change of 0.25 m³/h moves
 the COP by about 8 %. The flow is rarely measured, so method 2 serves as a check.
 

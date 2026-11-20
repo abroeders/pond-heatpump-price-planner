@@ -25,6 +25,8 @@ OUTDOOR_BINS: tuple[tuple[str, float, float], ...] = (
     (">=15", 15.0, 100.0),
 )
 MIN_BIN_HOURS = 24.0
+CALIBRATION_OFF_S = 1800.0  # the outlet counts as pond temperature from 30 minutes after a stop
+CALIBRATION_DAYS = 21.0
 
 
 def capacity_kwh_per_k(volume_m3: float | None) -> float | None:
@@ -53,6 +55,15 @@ class CopBucket:
     power_ws: float = 0.0  # ∫ power dt over counted time (W·s), for the mean power
     outdoor_ks: float = 0.0  # ∫ outdoor dt over counted time with a known outdoor (K·s)
     outdoor_s: float = 0.0
+    # sums over counted time, so the inlet choice and the outlet offset also apply to stored hours (#32)
+    out_ks: float = 0.0  # ∫ outlet dt
+    in_ks: float = 0.0  # ∫ heat pump inlet dt
+    pond_ks: float = 0.0  # ∫ pond dt over counted time with a known pond
+    pond_s: float = 0.0
+    # calibration: heat pump off for a while and water flowing, so the outlet should read the pond
+    cal_s: float = 0.0
+    cal_ks: float = 0.0  # ∫ (pond − outlet) dt
+    has_sums: float = 1.0  # 0 for buckets of older versions: only heat_per_flow_kwh is known
 
     @property
     def hours(self) -> float:
@@ -68,10 +79,13 @@ class CopBucket:
 
     def to_list(self) -> list:
         return [self.t, self.seconds, self.heat_per_flow_kwh, self.elec_kwh, self.power_ws, self.outdoor_ks,
-                self.outdoor_s]  # fmt: skip
+                self.outdoor_s, self.out_ks, self.in_ks, self.pond_ks, self.pond_s, self.cal_s,
+                self.cal_ks]  # fmt: skip
 
     @classmethod
     def from_list(cls, row: Sequence[float]) -> CopBucket:
+        if len(row) == 7:  # stored by a version before #32
+            return cls(*row, has_sums=0.0)
         return cls(*row)
 
 
@@ -90,7 +104,10 @@ class FlowAccumulator:
         self.t_in: float | None = None
         self.t_out: float | None = None
         self.outdoor: float | None = None
+        self.pond: float | None = None
+        self.circulation: bool | None = None  # None: unknown, water assumed to flow
         self.run_start: float | None = None
+        self.off_since: float | None = None
         self.energy: float | None = None
         self._since_energy_total = 0.0
         self._since_energy_counted: list[tuple[CopBucket, float]] = []
@@ -106,6 +123,17 @@ class FlowAccumulator:
             and t - self.run_start >= self.settle_s
             and self.t_in is not None
             and self.t_out is not None
+        )
+
+    def _calibrating(self, t: float) -> bool:
+        return (
+            self.power is not None
+            and self.power <= self.run_threshold_w
+            and self.off_since is not None
+            and t - self.off_since >= CALIBRATION_OFF_S
+            and self.circulation is not False
+            and self.t_out is not None
+            and self.pond is not None
         )
 
     def _advance(self, until: float) -> None:
@@ -124,6 +152,8 @@ class FlowAccumulator:
             # the settle point may fall inside the segment
             if self.run_start is not None and t < self.run_start + self.settle_s < seg_end:
                 seg_end = self.run_start + self.settle_s
+            if self.off_since is not None and t < self.off_since + CALIBRATION_OFF_S < seg_end:
+                seg_end = self.off_since + CALIBRATION_OFF_S
             dt = seg_end - t
             self._since_energy_total += dt
             if self._counted(t):
@@ -131,6 +161,11 @@ class FlowAccumulator:
                 b.seconds += dt
                 b.heat_per_flow_kwh += WATER_KWH_PER_M3_K * (self.t_out - self.t_in) * dt / 3600
                 b.power_ws += self.power * dt
+                b.out_ks += self.t_out * dt
+                b.in_ks += self.t_in * dt
+                if self.pond is not None:
+                    b.pond_ks += self.pond * dt
+                    b.pond_s += dt
                 if self.outdoor is not None:
                     b.outdoor_ks += self.outdoor * dt
                     b.outdoor_s += dt
@@ -138,6 +173,9 @@ class FlowAccumulator:
                     b.elec_kwh += self.power * dt / 3.6e6
                 else:
                     self._since_energy_counted.append((b, dt))
+            elif self._calibrating(t):
+                self.bucket.cal_s += dt
+                self.bucket.cal_ks += (self.pond - self.t_out) * dt
             t = seg_end
         self.t = until
 
@@ -150,6 +188,8 @@ class FlowAccumulator:
         t_out: float | None = None,
         outdoor: float | None = None,
         energy: float | None = None,
+        pond: float | None = None,
+        circulation: bool | None = None,
     ) -> None:
         """Apply new sensor values at time t (only the given ones change)."""
         self._advance(t)
@@ -158,6 +198,10 @@ class FlowAccumulator:
                 self.run_start = t
             if power <= self.run_threshold_w:
                 self.run_start = None
+                if self.power is None or self.power > self.run_threshold_w:
+                    self.off_since = t  # a stop, or the start-up with the heat pump off
+            else:
+                self.off_since = None
             self.power = power
         if t_in is not None:
             self.t_in = t_in
@@ -165,6 +209,10 @@ class FlowAccumulator:
             self.t_out = t_out
         if outdoor is not None:
             self.outdoor = outdoor
+        if pond is not None:
+            self.pond = pond
+        if circulation is not None:
+            self.circulation = circulation
         if energy is not None:
             self._energy(energy)
 
@@ -231,6 +279,44 @@ def _summarize(rows: Sequence[tuple[float, float, float, str | None, str]], min_
     return result
 
 
+@dataclass
+class OutletOffset:
+    offset: float | None  # K added to the outlet temperature
+    hours: float  # calibration hours in the window
+    source: str  # "learned", "manual" or "none"
+
+
+def outlet_offset(
+    buckets: Sequence[CopBucket], now: float, manual: float | None, days: float = CALIBRATION_DAYS
+) -> OutletOffset:
+    """The outlet correction: the manual value, else the mean pond − outlet while off with water flowing."""
+    start = now - days * 86400
+    sel = [b for b in buckets if start <= b.t < now and b.cal_s > 0]
+    seconds = sum(b.cal_s for b in sel)
+    if manual is not None:
+        return OutletOffset(manual, seconds / 3600, "manual")
+    if seconds > 0:
+        return OutletOffset(sum(b.cal_ks for b in sel) / seconds, seconds / 3600, "learned")
+    return OutletOffset(None, 0.0, "none")
+
+
+def _heat_per_flow(b: CopBucket, inlet: str, offset: float) -> float | None:
+    """kWh per (m³/h) with the chosen inlet and the corrected outlet; None when the bucket cannot give it."""
+    if not b.has_sums:
+        return (
+            b.heat_per_flow_kwh + WATER_KWH_PER_M3_K * offset * b.seconds / 3600
+            if inlet == "heat_pump"
+            else None
+        )
+    if inlet == "pond":
+        if b.pond_s < b.seconds - 1:  # the pond was not known during all counted time
+            return None
+        inlet_ks = b.pond_ks
+    else:
+        inlet_ks = b.in_ks
+    return WATER_KWH_PER_M3_K * (b.out_ks + offset * b.seconds - inlet_ks) / 3600
+
+
 def cop_flow(
     buckets: Sequence[CopBucket],
     flow_m3h: float | None,
@@ -238,22 +324,29 @@ def cop_flow(
     window_days: float = 14,
     high_w: float = 650.0,
     min_hours: float = 24.0,
+    inlet: str = "heat_pump",
+    offset: float = 0.0,
 ) -> CopResult | None:
     """COP of the flow method over the window; None without a flow."""
     if not flow_m3h:
         return None
     start = now - window_days * 86400
-    rows = [
-        (
-            b.heat_per_flow_kwh * flow_m3h,
-            b.elec_kwh,
-            b.hours,
-            _bin_of(b.outdoor),
-            "high" if (b.power_w or 0) >= high_w else "low",
+    rows = []
+    for b in buckets:
+        if not (start <= b.t < now and b.seconds > 0):
+            continue
+        heat = _heat_per_flow(b, inlet, offset)
+        if heat is None:
+            continue
+        rows.append(
+            (
+                heat * flow_m3h,
+                b.elec_kwh,
+                b.hours,
+                _bin_of(b.outdoor),
+                "high" if (b.power_w or 0) >= high_w else "low",
+            )
         )
-        for b in buckets
-        if start <= b.t < now and b.seconds > 0
-    ]
     return _summarize(rows, min_hours)
 
 

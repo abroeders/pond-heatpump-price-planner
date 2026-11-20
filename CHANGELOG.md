@@ -7,6 +7,20 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.3] - 2026-11-20
+
+### Added
+
+- Flow COP with whole-degree water sensors: option *COP: inlet temperature* (heat pump inlet or the pond
+  sensor), an outlet correction learned while the heat pump is off and water flows (or set by hand with
+  *COP: outlet correction*), and an optional link to a circulation sensor. The flow COP shows the inlet, the
+  correction, its source and the calibration hours (#32).
+
+### Fixed
+
+- After a start-up the flow method waited for the first change of each water temperature before counting;
+  it now starts from the current values (#32).
+
 ## [2026.11.2] - 2026-11-20
 
 ### Fixed
@@ -140,7 +154,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.3...HEAD
+[2026.11.3]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...v2026.11.3
 [2026.11.2]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.1...v2026.11.2
 [2026.11.1]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.0...v2026.11.1
 [2026.11.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.1...v2026.11.0

@@ -459,7 +459,7 @@ classDiagram
     class FlowAccumulator {
         +float run_threshold_w
         +float settle_s
-        +update(t, power, t_in, t_out, outdoor, energy)
+        +update(t, power, t_in, t_out, outdoor, energy, pond, circulation)
         +close_hour(t) List~CopBucket~
     }
     class CopBucket {
@@ -467,11 +467,19 @@ classDiagram
         +float seconds
         +float heat_per_flow_kwh
         +float elec_kwh
+        +float out_ks, in_ks, pond_ks, pond_s
+        +float cal_s, cal_ks
+        +float has_sums
         +power_w Optional~float~
         +outdoor Optional~float~
         +hours float
         +to_list() list
         +from_list(row)$ CopBucket
+    }
+    class OutletOffset {
+        +Optional~float~ offset
+        +float hours
+        +str source
     }
     class LossFit {
         +float a_kw
@@ -494,7 +502,9 @@ classDiagram
         <<from model.py>>
     }
     FlowAccumulator ..> CopBucket : creates per hour
-    CopBucket ..> CopResult : cop_flow
+    CopBucket ..> OutletOffset : outlet_offset
+    CopBucket ..> CopResult : cop_flow(inlet, offset)
+    OutletOffset ..> CopResult : corrects the outlet
     Hour ..> LossFit : fit_loss
     Hour ..> CopResult : cop_pond
     LossFit ..> CopResult : cop_pond
@@ -520,7 +530,8 @@ sequenceDiagram
     HA->>Acc: close_hour(t) just after every full hour
     Acc-->>HA: CopBuckets of all hours finished since the last call
     HA->>Store: keep bucket (42 days)
-    HA->>Calc: cop_flow(buckets, flow, now, window)
+    HA->>Calc: outlet_offset(buckets, now, manual)
+    HA->>Calc: cop_flow(buckets, flow, now, window, inlet, offset)
     HA->>Calc: fit_loss(hours, capacity), cop_pond(hours, loss, capacity, now, window)
     HA->>Calc: combine(method, flow result, pond result)
     Calc-->>HA: CopResult for the sensors
@@ -535,7 +546,11 @@ stateDiagram-v2
     Settling --> Counting: settle time passed and both water temperatures known
     Settling --> Idle: power below run threshold
     Counting --> Idle: power below run threshold
-    Counting --> Counting: update (integrate heat and electricity)
+    Counting --> Counting: update (integrate heat, electricity, outlet, inlet and pond)
+    Idle --> Calibrating: 30 min off, water flowing, outlet and pond known (#32)
+    Calibrating --> Idle: circulation off
+    Calibrating --> Settling: power above run threshold
+    Calibrating --> Calibrating: update (integrate pond − outlet)
 ```
 
 ## 6. Control and safety (#4)

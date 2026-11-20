@@ -18,6 +18,7 @@ CONF_SOLAR_FORECAST = "solar_forecast"
 CONF_OUTLET = "outlet_temperature"
 CONF_ENERGY = "energy"
 CONF_AIR_INLET = "air_inlet_temperature"
+CONF_CIRCULATION = "circulation"
 
 SURPLUS_TYPES = ("pv_power", "grid_export", "grid_net")
 
@@ -45,6 +46,10 @@ OPT_COP_WINDOW = "cop_window"
 OPT_RUN_THRESHOLD = "run_threshold"
 OPT_SETTLE = "settle_minutes"
 OPT_LANGUAGE = "language"
+OPT_COP_INLET = "cop_inlet"
+OPT_COP_OUTLET_CORRECTION = "cop_outlet_correction"  # absent: learned
+
+COP_INLETS = ("heat_pump", "pond")
 
 LANGUAGE_AUTO = "auto"
 LANGUAGES = ("en", "nl")
@@ -74,6 +79,7 @@ DEFAULT_OPTIONS = {
     OPT_RUN_THRESHOLD: 100,
     OPT_SETTLE: 20,
     OPT_LANGUAGE: LANGUAGE_AUTO,
+    OPT_COP_INLET: "heat_pump",
 }
 
 # settings held by entities, stored with the samples
