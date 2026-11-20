@@ -19,7 +19,7 @@ from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower, UnitO
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import SET_COP_METHOD, SET_COVER, SET_FLOW
+from .const import OPT_LANGUAGE, SET_COP_METHOD, SET_COVER, SET_FLOW
 from .coordinator import PlannerCoordinator, PlannerData
 from .core.cop import CopResult
 from .core.model import MODES
@@ -91,6 +91,14 @@ def _d(c: PlannerCoordinator) -> PlannerData:
     return c.data
 
 
+def _reason(c: PlannerCoordinator) -> str | None:
+    return _d(c).decision.reason if _d(c).decision else None
+
+
+def _apply_result(c: PlannerCoordinator) -> str | None:
+    return _d(c).applied.reason if _d(c).applied else None
+
+
 SENSORS: tuple[PlannerSensorDescription, ...] = (
     PlannerSensorDescription(
         key="mode",
@@ -98,14 +106,18 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
         options=list(MODES),
         value_fn=lambda c: _d(c).decision.mode if _d(c).decision else None,
         attrs_fn=lambda c: {
-            "reason": _d(c).decision.reason if _d(c).decision else None,
+            "reason": _reason(c),
+            "reason_text": c.texts.attribute_text("mode", "reason", _reason(c)),
             "plan_mode": _d(c).plan.mode if _d(c).plan else None,
             "measured_mode": _d(c).measured_mode,
             "control": bool(c.settings["control"]),
             "would_set": _d(c).applied.setpoint if _d(c).applied else None,
-            "apply_result": _d(c).applied.reason if _d(c).applied else None,
+            "apply_result": _apply_result(c),
+            "apply_result_text": c.texts.attribute_text("mode", "apply_result", _apply_result(c)),
             "mismatch": _d(c).mismatch,
             "price_status": _d(c).price_status,
+            "price_status_text": c.texts.attribute_text("mode", "price_status", _d(c).price_status),
+            "language": c.options[OPT_LANGUAGE],
             "horizon_end": _ts(_d(c).plan.start + len(_d(c).plan.modes) * 900) if _d(c).plan else None,
             "plan": _plan_list(c),
             "pond_history": _pond_history(c),
@@ -260,7 +272,17 @@ async def async_setup_entry(
 class PlannerSensor(PlannerEntity, SensorEntity):
     entity_description: PlannerSensorDescription
     _unrecorded_attributes = frozenset(
-        {"plan", "pond_history", "reports", "hours_by_outdoor", "hours_by_power"}
+        {
+            "plan",
+            "pond_history",
+            "reports",
+            "hours_by_outdoor",
+            "hours_by_power",
+            "reason_text",
+            "apply_result_text",
+            "price_status_text",
+            "language",
+        }
     )
 
     def __init__(self, coordinator: PlannerCoordinator, description: PlannerSensorDescription) -> None:

@@ -180,3 +180,76 @@ async def test_version_1_entry_is_not_migrated(hass: HomeAssistant, pond_states)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     assert entry.state is ConfigEntryState.MIGRATION_ERROR
+
+
+async def setup_in(hass: HomeAssistant, system: str, option: str) -> MockConfigEntry:
+    hass.config.language = system
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Pond",
+        unique_id=CLIMATE,
+        data=LINKS,
+        options={**DEFAULT_OPTIONS, "language": option},
+        version=2,
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.data["_entry_id"] = entry.entry_id
+    return entry
+
+
+async def test_language_option_fixes_names_and_texts(hass: HomeAssistant, pond_states) -> None:
+    entry = await setup_in(hass, "en", "nl")
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    mode = state(hass, "sensor", "mode")
+    assert mode.attributes["friendly_name"] == "Pond Stand"
+    assert state(hass, "climate", "thermostat").attributes["friendly_name"] == "Pond Thermostaat"
+    assert mode.attributes["language"] == "nl"
+    assert mode.attributes["reason"] == "plan" and mode.attributes["reason_text"] == "volgens plan"
+    assert mode.attributes["apply_result_text"] == "proefdraaien, niets verstuurd"
+    assert state(hass, "climate", "thermostat").attributes["reason_text"] == "volgens plan"
+
+
+async def test_english_option_in_a_dutch_home_assistant(hass: HomeAssistant, pond_states) -> None:
+    entry = await setup_in(hass, "nl", "en")
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    mode = state(hass, "sensor", "mode")
+    assert mode.attributes["friendly_name"] == "Pond Mode"
+    assert mode.attributes["reason_text"] == "following the plan"
+
+
+async def test_automatic_language_leaves_names_to_home_assistant(hass: HomeAssistant, pond_states) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    entry = await setup_in(hass, "en", "auto")
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    mode = state(hass, "sensor", "mode")
+    assert mode.attributes["language"] == "auto"
+    assert mode.attributes["reason_text"] == "following the plan"
+    assert er.async_get(hass).async_get(mode.entity_id).translation_key == "mode"
+
+
+async def test_changing_the_language_renames_without_new_entity_ids(hass: HomeAssistant, pond_states) -> None:
+    entry = await setup_in(hass, "en", "auto")
+    before = state(hass, "sensor", "mode").entity_id
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "language": "nl"})
+    await hass.async_block_till_done()  # the update listener reloads the entry
+    mode = state(hass, "sensor", "mode")
+    assert mode.entity_id == before
+    assert mode.attributes["friendly_name"] == "Pond Stand"
+
+
+async def test_entry_without_language_option_is_automatic(hass: HomeAssistant, pond_states) -> None:
+    options = {k: v for k, v in DEFAULT_OPTIONS.items() if k != "language"}
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Pond", unique_id=CLIMATE, data=LINKS, options=options, version=2
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.data["_entry_id"] = entry.entry_id
+    assert state(hass, "sensor", "mode").attributes["language"] == "auto"

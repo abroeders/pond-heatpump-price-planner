@@ -13,8 +13,9 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from .const import CARD_FILE, CARD_URL, DOMAIN
+from .const import CARD_FILE, CARD_URL, DOMAIN, OPT_LANGUAGE
 from .coordinator import PlannerCoordinator
+from .language import PlannerTexts
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlannerConfigEntry) -> b
     except Exception:
         await coordinator.async_stop()  # no timers or listeners may outlive a failed setup
         raise
+    coordinator.texts = await PlannerTexts.async_load(hass, coordinator.options[OPT_LANGUAGE])
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
