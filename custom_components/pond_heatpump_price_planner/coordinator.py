@@ -15,8 +15,8 @@ from functools import partial
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers.event import (
     async_call_later,
     async_track_state_change_event,
@@ -27,6 +27,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     CONF_AIR_INLET,
+    CONF_CIRCULATION,
     CONF_CLIMATE,
     CONF_ENERGY,
     CONF_INLET,
@@ -40,6 +41,8 @@ from .const import (
     DOMAIN,
     LEARN_TIME,
     OPT_ALLOW_HIGH,
+    OPT_COP_INLET,
+    OPT_COP_OUTLET_CORRECTION,
     OPT_COP_WINDOW,
     OPT_HIGH_W,
     OPT_HORIZON,
@@ -72,6 +75,7 @@ from .core.cop import (
     CopResult,
     FlowAccumulator,
     LossFit,
+    OutletOffset,
     capacity_kwh_per_k,
     combine,
     cop_flow,
@@ -79,6 +83,7 @@ from .core.cop import (
     fit_loss,
     heat_loss_w_per_k,
     model_check,
+    outlet_offset,
     thermal_power_w,
 )
 from .core.costs import EnergyCosts
@@ -103,6 +108,22 @@ REPLAN_SOURCES = (CONF_POND, CONF_CLIMATE, CONF_PRICE, CONF_PRICE_FORECAST)
 MISSING = (STATE_UNAVAILABLE, STATE_UNKNOWN)
 
 
+def _number(state: State | None) -> float | None:
+    if state is None or state.state in MISSING:
+        return None
+    try:
+        return float(state.state)
+    except ValueError:
+        return None
+
+
+def _circulation(state: State | None) -> bool | None:
+    """Whether water flows through the heat pump; None when unknown (then it is assumed to flow)."""
+    if state is None or state.state in MISSING:
+        return None
+    return state.state == STATE_ON
+
+
 def _became_available(event: Event[EventStateChangedData]) -> bool:
     old, new = event.data.get("old_state"), event.data.get("new_state")
     return new is not None and new.state not in MISSING and (old is None or old.state in MISSING)
@@ -123,6 +144,7 @@ class PlannerData:
     pond: float | None = None
     cop: CopResult | None = None
     cop_flow: CopResult | None = None
+    outlet_offset: OutletOffset | None = None
     cop_pond: CopResult | None = None
     loss: LossFit | None = None
     heat_loss_w_per_k: float | None = None
@@ -204,6 +226,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         if power is not None:
             self.power.add(now, power)
             self.flow.update(now, power=power)
+        self.flow.update(now, **self._flow_state())
         watched = [
             self.links.get(k)
             for k in (
@@ -213,6 +236,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 CONF_ENERGY,
                 CONF_OUTDOOR,
                 CONF_AIR_INLET,
+                CONF_CIRCULATION,
                 *REPLAN_SOURCES,
             )
         ]
@@ -230,6 +254,16 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         await self.async_replan()
         # the linked sensors may not exist yet while Home Assistant starts: plan again once it has started
         self._unsubs.append(async_at_started(self.hass, self._on_started))
+
+    def _flow_state(self) -> dict[str, Any]:
+        """Current water, pond and outdoor values and the circulation, for the flow method at start-up."""
+        outdoor_key = CONF_AIR_INLET if self.links.get(CONF_AIR_INLET) else CONF_OUTDOOR
+        keys = {"t_in": CONF_INLET, "t_out": CONF_OUTLET, "pond": CONF_POND, "outdoor": outdoor_key}
+        out: dict[str, Any] = {
+            name: _number(self.hass.states.get(self.links.get(key) or "")) for name, key in keys.items()
+        }
+        out["circulation"] = _circulation(self.hass.states.get(self.links.get(CONF_CIRCULATION) or ""))
+        return {k: v for k, v in out.items() if v is not None}
 
     async def _on_started(self, _hass: HomeAssistant) -> None:
         await self.async_replan()
@@ -258,6 +292,9 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             value = None
         t = time.time()
         entity_id = event.data["entity_id"]
+        if entity_id == self.links.get(CONF_CIRCULATION):
+            self.flow.update(t, circulation=_circulation(state))
+            return
         if entity_id in {self.links.get(k) for k in REPLAN_SOURCES} and _became_available(event):
             self.schedule_replan()  # a source came back: do not wait for the next quarter
         if entity_id == self.links.get(CONF_POWER):
@@ -276,6 +313,8 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 self.hass.async_create_task(self._async_reapply())
         if entity_id == self.links.get(CONF_OUTLET) and value is not None:
             self.flow.update(t, t_out=value)
+        if entity_id == self.links.get(CONF_POND) and value is not None:
+            self.flow.update(t, pond=value)
         if entity_id == self.links.get(CONF_ENERGY) and value is not None:
             self.flow.update(t, energy=value)
         outdoor_key = CONF_AIR_INLET if self.links.get(CONF_AIR_INLET) else CONF_OUTDOOR
@@ -450,12 +489,21 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         window = float(self.options[OPT_COP_WINDOW])
         capacity = capacity_kwh_per_k(self.settings[SET_VOLUME])
         flow = self.settings[SET_FLOW]
-        flow_result = cop_flow(self.store.buckets, flow, now, window, float(self.options[OPT_HIGH_W]))
+        offset = outlet_offset(self.store.buckets, now, self.options.get(OPT_COP_OUTLET_CORRECTION))
+        flow_result = cop_flow(
+            self.store.buckets,
+            flow,
+            now,
+            window,
+            float(self.options[OPT_HIGH_W]),
+            inlet=self.options[OPT_COP_INLET],
+            offset=offset.offset or 0.0,
+        )
         hours = hourly(self.store.samples, self.hass.config.time_zone, self.classifier)
         loss = fit_loss(hours, capacity, now) if capacity else None
         pond_result = cop_pond(hours, loss, capacity, now, window)
         d = self.data
-        d.cop_flow, d.cop_pond, d.loss = flow_result, pond_result, loss
+        d.cop_flow, d.cop_pond, d.loss, d.outlet_offset = flow_result, pond_result, loss, offset
         d.cop = combine(self.settings[SET_COP_METHOD], flow_result, pond_result)
         d.model_check = model_check(self.params, flow_result, pond_result)
         counted = [b for b in self.store.buckets if now - window * 86400 <= b.t < now and b.seconds]

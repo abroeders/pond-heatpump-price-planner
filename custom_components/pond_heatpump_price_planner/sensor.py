@@ -19,7 +19,7 @@ from homeassistant.const import EntityCategory, UnitOfEnergy, UnitOfPower, UnitO
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import OPT_LANGUAGE, SET_COP_METHOD, SET_COVER, SET_FLOW
+from .const import OPT_COP_INLET, OPT_LANGUAGE, SET_COP_METHOD, SET_COVER, SET_FLOW
 from .coordinator import PlannerCoordinator, PlannerData
 from .core.cop import CopResult
 from .core.model import MODES
@@ -27,6 +27,7 @@ from .entity import PlannerEntity
 
 PLAN_ATTRIBUTE_QUARTERS = 144
 POND_HISTORY_HOURS = 48  # the plan chart can show up to about 37 h of history
+MIN_CALIBRATION_HOURS = 6.0  # below this the learned outlet offset is flagged as still calibrating
 
 
 def _ts(epoch: float | None) -> datetime | None:
@@ -78,6 +79,20 @@ def _cop_attrs(result: CopResult | None, c: PlannerCoordinator) -> dict[str, Any
         "hours_by_outdoor": {k: round(v, 1) for k, v in result.hours_by_outdoor.items()},
         "hours_by_power": {k: round(v, 1) for k, v in result.hours_by_power.items()},
         "window_days": c.options["cop_window"],
+    }
+
+
+def _calibration(c: PlannerCoordinator) -> dict[str, Any]:
+    """Inlet and outlet correction of the flow method (#32)."""
+    o = _d(c).outlet_offset
+    if o is None:
+        return {}
+    return {
+        "inlet": c.options[OPT_COP_INLET],
+        "outlet_offset": _round(o.offset, 2),
+        "offset_source": o.source,
+        "calibration_hours": round(o.hours, 1),
+        "calibrating": o.source != "manual" and o.hours < MIN_CALIBRATION_HOURS,
     }
 
 
@@ -171,7 +186,7 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
         key="cop_flow",
         suggested_display_precision=1,
         value_fn=lambda c: _round(_d(c).cop_flow.cop, 2) if _d(c).cop_flow else None,
-        attrs_fn=lambda c: {**_cop_attrs(_d(c).cop_flow, c), "flow": c.settings[SET_FLOW]},
+        attrs_fn=lambda c: {**_cop_attrs(_d(c).cop_flow, c), "flow": c.settings[SET_FLOW], **_calibration(c)},
     ),
     PlannerSensorDescription(
         key="cop_pond",

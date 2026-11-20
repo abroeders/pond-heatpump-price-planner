@@ -15,6 +15,7 @@ from core.cop import (
     fit_loss,
     heat_loss_w_per_k,
     model_check,
+    outlet_offset,
     thermal_power_w,
 )
 from core.learning import hourly
@@ -96,6 +97,68 @@ def test_bucket_roundtrip():
     b = CopBucket(3600, 1800, 0.5, 0.2, 400 * 1800, 5 * 1800, 1800)
     assert CopBucket.from_list(b.to_list()) == b
     assert b.outdoor == 5 and b.hours == 0.5
+
+
+def test_old_bucket_list_loads_without_sums():
+    b = CopBucket.from_list([3600, 1800, 0.5, 0.2, 400 * 1800, 5 * 1800, 1800])
+    assert not b.has_sums and b.out_ks == 0 and b.cal_s == 0
+    assert cop_flow([b], 3.0, 2 * H, min_hours=0, inlet="heat_pump").cop == pytest.approx(0.5 * 3 / 0.2)
+    assert cop_flow([b], 3.0, 2 * H, min_hours=0, inlet="pond").hours == 0  # cannot use the pond
+
+
+def test_calibration_starts_30_minutes_after_a_stop():
+    acc = FlowAccumulator(settle_s=0)
+    acc.update(0, power=400, t_in=14, t_out=15, pond=14.6)
+    acc.update(600, power=5)  # stops
+    acc.update(1800, t_out=14)
+    (b,) = acc.close_hour(H)
+    assert b.cal_s == pytest.approx(H - 600 - 1800)  # from 2400 s
+    assert b.cal_ks == pytest.approx(0.6 * b.cal_s)
+    assert b.seconds == pytest.approx(600)
+    assert b.out_ks == pytest.approx(15 * 600) and b.pond_ks == pytest.approx(14.6 * 600)
+
+
+def test_no_calibration_without_flow_or_pond_and_after_start_up_only_later():
+    acc = FlowAccumulator(settle_s=0)
+    acc.update(0, power=5, t_out=14)  # start-up with the heat pump off: wait 30 minutes
+    acc.update(2400, pond=14.5)  # pond known only from 40 min
+    acc.update(3000, circulation=False)  # no flow from 50 min
+    (b,) = acc.close_hour(H)
+    assert b.cal_s == pytest.approx(600)
+    acc.update(H + 600, circulation=True)
+    (b2,) = acc.close_hour(2 * H)
+    assert b2.cal_s == pytest.approx(H - 600)
+
+
+def test_outlet_offset_learned_manual_and_none():
+    b = CopBucket(0, cal_s=1800, cal_ks=0.28 * 1800)
+    learned = outlet_offset([b], H, None)
+    assert learned.source == "learned" and learned.offset == pytest.approx(0.28) and learned.hours == 0.5
+    assert outlet_offset([b], H, 0.3).offset == 0.3 and outlet_offset([b], H, 0.3).source == "manual"
+    assert outlet_offset([b], 30 * 86400, None).source == "none"  # outside the 21 days
+
+
+def test_pond_inlet_and_learned_offset_recover_the_cop_from_biased_sensors():
+    """Whole-degree sensors as on the W'eau: the inlet stays at 14 and the outlet reads 0.28 K low."""
+    rng = random.Random(3)
+    cop, flow = 4.5, 2.75
+    true_dt = cop * 0.4 / (flow * 1.163)
+    acc = FlowAccumulator(settle_s=1200)
+    buckets = []
+    for i in range(21 * 96):
+        t = i * QUARTER
+        buckets += acc.close_hour(t)
+        on = (i % 96) < 72  # 18 h a day on, 6 h off
+        pond = 14.6 + 0.05 * math.sin(i / 20)
+        t_out = pond + (true_dt if on else 0) - 0.28 + rng.uniform(-0.5, 0.5)
+        acc.update(t, power=400 if on else 5, t_in=14, t_out=round(t_out), pond=round(pond / 0.06) * 0.06)
+    now = 21 * 86400
+    offset = outlet_offset(buckets, now, None)
+    assert offset.offset == pytest.approx(0.28, abs=0.05) and offset.hours > 50
+    raw = cop_flow(buckets, flow, now, window_days=21)
+    fixed = cop_flow(buckets, flow, now, window_days=21, inlet="pond", offset=offset.offset)
+    assert raw.cop > 1.3 * cop  # the stuck inlet overestimates
+    assert fixed.cop == pytest.approx(cop, rel=0.05)
 
 
 def synthetic_buckets(days: int, cop: float, flow: float, quantum: float, seed: int = 2):

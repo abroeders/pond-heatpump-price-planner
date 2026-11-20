@@ -49,11 +49,13 @@
         "data": {
           "outlet_temperature": "Wateruitlaattemperatuur van de warmtepomp",
           "energy": "Energie warmtepomp",
-          "air_inlet_temperature": "Luchtinlaattemperatuur van de warmtepomp"
+          "air_inlet_temperature": "Luchtinlaattemperatuur van de warmtepomp",
+          "circulation": "Circulatie door de warmtepomp"
         },
         "data_description": {
           "energy": "Energieteller; zonder deze wordt het vermogen geïntegreerd.",
-          "air_inlet_temperature": "Voor de COP per buitentemperatuur; zonder deze wordt de buitensensor gebruikt."
+          "air_inlet_temperature": "Voor de COP per buitentemperatuur; zonder deze wordt de buitensensor gebruikt.",
+          "circulation": "Optionele binaire sensor die aan is zolang er water door de warmtepomp stroomt. Wordt gebruikt om de uitlaatsensor voor de COP te kalibreren; zonder deze sensor wordt aangenomen dat het water altijd stroomt."
         }
       },
       "reconfigure": {
@@ -108,6 +110,8 @@
           "cop_window": "COP-venster",
           "run_threshold": "COP: draait vanaf",
           "settle_minutes": "COP: stabilisatietijd na een start",
+          "cop_inlet": "COP: inlaattemperatuur",
+          "cop_outlet_correction": "COP: correctie uitlaat (handmatig)",
           "language": "Taal"
         },
         "data_description": {
@@ -118,12 +122,20 @@
           "surcharge_auto": "Elke nacht worden de laatste 14 dagen opnieuw afgespeeld en wordt de toeslag met de laagste echte kosten gekozen.",
           "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand.",
           "offset_start": "Voor laag en hoog zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt.",
+          "cop_inlet": "Inlaat van de flow-methode. De vijversensor is nauwkeuriger als de warmtepomp hele graden meldt.",
+          "cop_outlet_correction": "Wordt bij de uitlaattemperatuur opgeteld. Leeg laten om hem te leren terwijl de warmtepomp uit staat en het water stroomt (de uitlaat hoort dan de vijvertemperatuur te geven).",
           "language": "Taal van de entiteitsnamen, de toelichtende attributen en de kaart. Automatisch volgt Home Assistant. Schermen die Home Assistant zelf tekent blijven in je profieltaal."
         }
       }
     }
   },
   "selector": {
+    "cop_inlet": {
+      "options": {
+        "heat_pump": "Inlaat warmtepomp",
+        "pond": "Vijvertemperatuursensor"
+      }
+    },
     "language": {
       "options": {
         "auto": "Automatisch",

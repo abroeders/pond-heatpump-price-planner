@@ -22,6 +22,7 @@ entities; see [Entities](entities.md).
 | `outlet_temperature` | Water outlet temperature | no | no flow COP |
 | `energy` | Heat pump energy | no | electricity for the COP from the power sensor |
 | `air_inlet_temperature` | Air inlet temperature | no | the outdoor sensor is used for the COP per outdoor temperature |
+| `circulation` | Circulation through the heat pump (binary sensor) | no | water is assumed to always flow when the outlet sensor is calibrated |
 
 ### Price sensor formats
 
@@ -77,6 +78,8 @@ A solar forecast sensor is read from a `forecast` list with `w` (W) per entry, o
 | `cop_window` | 14 d | 7–42 d | window of the COP sensors | shorter: follows changes faster, more noise |
 | `run_threshold` | 100 W | 0–2000 W | flow COP: running above this power | – |
 | `settle_minutes` | 20 min | 0–120 min | flow COP: ignore this long after each start | lower: includes unstable start-up readings |
+| `cop_inlet` | heat pump inlet | heat pump inlet, pond temperature sensor | inlet temperature of the flow COP | the pond sensor is more precise when the heat pump reports whole degrees, see [COP](cop.md#calibrating-whole-degree-sensors) |
+| `cop_outlet_correction` | empty | −2–2 K | added to the outlet temperature of the flow COP | empty: learned while the heat pump is off and water flows |
 | `language` | automatic | automatic, English, Nederlands | language of the entity names, the explanatory attributes (`reason_text` and friends) and the card | see below |
 
 Saving the options restarts the planner. The learned model and the stored data are kept.

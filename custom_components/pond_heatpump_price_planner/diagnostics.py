@@ -21,6 +21,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
         "extra": c.store.extra,
         "samples": len(c.store.samples),
         "cop_buckets": len(c.store.buckets),
+        "outlet_offset": vars(c.data.outlet_offset) if c.data.outlet_offset else None,
         "decision": vars(c.data.decision) if c.data.decision else None,
         "applied": vars(c.data.applied) if c.data.applied else None,
         "price_status": c.data.price_status,
