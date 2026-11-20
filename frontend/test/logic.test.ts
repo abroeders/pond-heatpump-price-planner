@@ -5,14 +5,29 @@ import { chartWidth, columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
 import { plannerDevices, resolvePlanner } from "../src/entities";
 import { angleOf, clampStep, ring, sparkline, tempAt, START, SWEEP } from "../src/gauge-math";
-import { localizer } from "../src/localize";
+import { cardLanguage, localizer } from "../src/localize";
+import { editorSchema } from "../src/editor";
 import { buildViewModel } from "../src/viewmodel";
 import { DEVICE, fakeHass } from "./fixtures";
-import { clockText, time } from "../src/format";
+import { clockText, fixed, numberText, power, temperature, time, withUnit } from "../src/format";
 
 const config = { type: "custom:pond-heatpump-planner-card", device_id: DEVICE, heat_pump: { pump_speed: "sensor.pump_speed", pump_power: "sensor.pump_power", fan: "binary_sensor.fan", flow: "binary_sensor.flow", pump_fault: "binary_sensor.pump_fault" } };
 
 const NOW = Date.parse("2026-11-17T10:05:00Z"); // inside the fixture plan
+
+describe("number formatting", () => {
+  it("formats fixed decimal text in the card language", () => {
+    expect(numberText(0.33, 2, "en")).toBe("0.33");
+    expect(numberText(0.33, 2, "nl")).toBe("0,33");
+    expect(fixed(12.3, 2, "nl")).toBe("12,30");
+  });
+
+  it("uses commas in Dutch display helpers", () => {
+    expect(temperature(14.6, "nl")).toBe("14,6 °C");
+    expect(power(2850, "nl")).toBe("2,85 kW");
+    expect(withUnit(0.33, "kWh", 2, "nl")).toBe("0,33 kWh");
+  });
+});
 
 describe("time ticks and sparkline", () => {
   it("ticks at local 0, 6, 12 and 18 h, marking midnights", () => {
@@ -71,6 +86,12 @@ describe("view model", () => {
     expect(vm.figures).toMatchObject({ cost: "€ 2.31", expensive: "6 %", cop: "5.4", copMethod: "average", heatLoss: "295 W/K" });
     expect(vm.switches?.control).toEqual({ entity: "switch.pond_control", on: true });
     expect(vm.model?.copByOutdoor).toEqual([["<5", "4.9"], ["5-10", "5.4"], ["10-15", null]]);
+  });
+
+  it("formats the cost with the planner's Dutch language", () => {
+    const hass = fakeHass();
+    hass.states["sensor.pond_mode"].attributes.language = "nl";
+    expect(buildViewModel(hass, config).figures?.cost).toBe("€ 2,31");
   });
 
   it("uses the planner's links as defaults and the card config first", () => {
@@ -187,7 +208,9 @@ describe("chart window, measured line and hover", () => {
     expect(lines[1]).toBe("14.56 °C predicted");
     expect(lines).toContain("mode: off");
     expect(lines).toContain("€ 0.300/kWh (forecast)");
-    expect(tooltipLines(past, localizer("nl"), "nl")[1]).toBe("14.20 °C gemeten");
+    expect(tooltipLines(planned, localizer("nl"), "nl")).toContain("€ 0,300/kWh (verwacht)");
+    expect(tooltipLines({ ...planned, known: true }, localizer("nl"), "nl")).toContain("€ 0,300/kWh");
+    expect(tooltipLines(past, localizer("nl"), "nl")[1]).toBe("14,20 °C gemeten");
     expect(tooltipLines(empty, localizer("en"), "en")).toHaveLength(1);
   });
 
@@ -265,5 +288,26 @@ describe("localizer", () => {
     expect(localizer("de")("pond")).toBe("pond");
     expect(localizer("en")("plan_summary", { parts: "x" })).toBe("Plan: x.");
     expect(localizer("en")("unknown_key")).toBe("unknown_key");
+  });
+
+  it("takes the card option, then the integration's language, then the profile language", () => {
+    const base = { type: "custom:pond-heatpump-planner-card" };
+    expect(cardLanguage({ ...base, language: "nl" }, "en", "en")).toBe("nl");
+    expect(cardLanguage({ ...base, language: "auto" }, "nl", "en")).toBe("nl");
+    expect(cardLanguage(base, "auto", "en-GB")).toBe("en-GB");
+    expect(cardLanguage(base, undefined, undefined)).toBe("en");
+  });
+
+  it("follows the language option of the integration in the view model", () => {
+    const hass = fakeHass();
+    hass.states["sensor.pond_mode"].attributes.language = "nl";
+    expect(buildViewModel(hass, config).language).toBe("nl");
+    expect(buildViewModel(hass, { ...config, language: "en" }).language).toBe("en");
+  });
+
+  it("offers the language in the editor, labelled in the editor's language", () => {
+    const field = editorSchema(localizer("nl")).find((f) => f.name === "language") as any;
+    expect(field.selector.select.options.map((o: any) => o.value)).toEqual(["auto", "en", "nl"]);
+    expect(field.selector.select.options[0].label).toBe("Volg de integratie");
   });
 });

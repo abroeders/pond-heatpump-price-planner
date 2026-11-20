@@ -30,7 +30,8 @@ happens.
 - **COP** by two independent methods (water flow and the pond itself), plus heat loss and thermal power.
 - **Built-in Lovelace card** with an animated heat pump drawing, a thermostat with the band, the plan and
   the key figures; no separate download.
-- **Everything in the UI**, in English and Dutch.
+- **Everything in the UI**, in English and Dutch; the planner and its card can use another language than Home
+  Assistant itself.
 
 On the reference pond (21 m³, November 2026) the planner costs about 25–30 % less than the previous control
 at high power, with 1–2 starts a day and the pond within ±0.25 K.

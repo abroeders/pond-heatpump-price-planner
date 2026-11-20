@@ -107,7 +107,8 @@
           "high_w": "Vermogensgrens laag/hoog",
           "cop_window": "COP-venster",
           "run_threshold": "COP: draait vanaf",
-          "settle_minutes": "COP: stabilisatietijd na een start"
+          "settle_minutes": "COP: stabilisatietijd na een start",
+          "language": "Taal"
         },
         "data_description": {
           "price_multiplier": "Effectieve prijs = prijs × vermenigvuldiger + opslag. Voor een kale beursprijs in Nederland: 1,21 en ongeveer 0,136.",
@@ -116,12 +117,20 @@
           "margin": "Het plan blijft zo ver binnen de band om voorspelfouten op te vangen.",
           "surcharge_auto": "Elke nacht worden de laatste 14 dagen opnieuw afgespeeld en wordt de toeslag met de laagste echte kosten gekozen.",
           "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand.",
-          "offset_start": "Voor laag en hoog zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt."
+          "offset_start": "Voor laag en hoog zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt.",
+          "language": "Taal van de entiteitsnamen, de toelichtende attributen en de kaart. Automatisch volgt Home Assistant. Schermen die Home Assistant zelf tekent blijven in je profieltaal."
         }
       }
     }
   },
   "selector": {
+    "language": {
+      "options": {
+        "auto": "Automatisch",
+        "en": "English",
+        "nl": "Nederlands"
+      }
+    },
     "surplus_type": {
       "options": {
         "pv_power": "PV-vermogen (W)",
@@ -133,7 +142,20 @@
   "entity": {
     "climate": {
       "thermostat": {
-        "name": "Thermostaat"
+        "name": "Thermostaat",
+        "state_attributes": {
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "plan": "volgens plan",
+              "no_plan": "geen plan",
+              "below_band": "onder de band",
+              "far_below_band": "ver onder de band",
+              "above_band": "boven de band",
+              "no_pond_temperature": "geen vijvertemperatuur"
+            }
+          }
+        }
       }
     },
     "sensor": {
@@ -143,6 +165,39 @@
           "off": "Uit",
           "low": "Laag",
           "high": "Hoog"
+        },
+        "state_attributes": {
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "plan": "volgens plan",
+              "no_plan": "geen plan",
+              "below_band": "onder de band",
+              "far_below_band": "ver onder de band",
+              "above_band": "boven de band",
+              "no_pond_temperature": "geen vijvertemperatuur"
+            }
+          },
+          "apply_result": {
+            "name": "Resultaat setpoint",
+            "state": {
+              "sent": "setpoint verstuurd",
+              "unchanged": "setpoint ongewijzigd",
+              "dry_run": "proefdraaien, niets verstuurd",
+              "heat_pump_off": "warmtepomp uitgeschakeld",
+              "unavailable": "warmtepomp niet beschikbaar",
+              "error": "fout bij versturen"
+            }
+          },
+          "price_status": {
+            "name": "Prijsstatus",
+            "state": {
+              "ok": "prijzen bekend",
+              "limited_prices": "weinig prijzen bekend",
+              "forecast_only": "alleen voorspelde prijzen",
+              "no_prices": "geen prijzen"
+            }
+          }
         }
       },
       "next_start": {

@@ -7,6 +7,13 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Option *Language* (automatic, English, Nederlands): entity names, readable texts for the reason, setpoint
+  result and price status (`reason_text`, `apply_result_text`, `price_status_text`) and the card in that
+  language, independent of the Home Assistant language. The card has its own `language` option that
+  overrides it; texts, dates and numbers follow the chosen language (#28).
+
 ## [2026.11.0] - 2026-11-20
 
 ### Fixed

@@ -30,6 +30,7 @@ class PondThermostat(PlannerEntity, ClimateEntity):
     _attr_min_temp = TARGET_MIN
     _attr_max_temp = TARGET_MAX
     _attr_target_temperature_step = TARGET_STEP
+    _unrecorded_attributes = frozenset({"reason_text"})
 
     def __init__(self, coordinator: PlannerCoordinator) -> None:
         super().__init__(coordinator, "thermostat")
@@ -53,6 +54,9 @@ class PondThermostat(PlannerEntity, ClimateEntity):
         return {
             "mode": decision.mode if decision else None,
             "reason": decision.reason if decision else None,
+            "reason_text": self.coordinator.texts.attribute_text(
+                "thermostat", "reason", decision.reason if decision else None
+            ),
             "band": self.coordinator.settings[SET_BAND],
             "control": bool(self.coordinator.settings[SET_CONTROL]),
         }

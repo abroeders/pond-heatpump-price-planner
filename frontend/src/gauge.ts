@@ -1,6 +1,7 @@
 // Thermostat gauge with a vertical band slider. Emits `set-target` and `set-band` after 1 s of quiet.
 
 import { LitElement, css, html, nothing, svg } from "lit";
+import { numberText } from "./format";
 import { WINDOW, angleOf, arc, clampStep, point, ring, sparkline, tempAt, START, SWEEP } from "./gauge-math";
 import type { Localizer } from "./localize";
 import type { GaugeModel } from "./viewmodel";
@@ -15,12 +16,14 @@ export class PhpcGauge extends LitElement {
   static properties = {
     model: { attribute: false },
     t: { attribute: false },
+    language: {},
     _target: { state: true },
     _band: { state: true },
   };
 
   model!: GaugeModel;
   t!: Localizer;
+  language = "en";
   _target: number | null = null; // local value while the user is changing it
   _band: number | null = null;
   private _timers: Record<string, ReturnType<typeof setTimeout> | undefined> = {};
@@ -132,8 +135,8 @@ export class PhpcGauge extends LitElement {
           <path d=${spark.line} class="spark-line"/>
           <text x=${b.x} y=${b.y + b.h + 11} class="spark-label">−24 h</text>
           <text x=${b.x + b.w} y=${b.y + b.h + 11} class="spark-label" text-anchor="end">${t("now")}</text>
-          <text x=${b.x - 4} y=${b.y + 4} class="spark-label" text-anchor="end">${spark.hi.toFixed(1)}</text>
-          <text x=${b.x - 4} y=${b.y + b.h} class="spark-label" text-anchor="end">${spark.lo.toFixed(1)}</text>
+          <text x=${b.x - 4} y=${b.y + 4} class="spark-label" text-anchor="end">${numberText(spark.hi, 1, this.language)}</text>
+          <text x=${b.x - 4} y=${b.y + b.h} class="spark-label" text-anchor="end">${numberText(spark.lo, 1, this.language)}</text>
         </g>`
       : svg``;
     return html`
@@ -150,20 +153,20 @@ export class PhpcGauge extends LitElement {
           <path d=${arc(r, START, START + SWEEP)} class="hit"
             @pointerdown=${this.onDown} @pointermove=${this.onMove} @pointerup=${this.onUp}/>
           <text x="180" y="140" class="caption" text-anchor="middle">${t("pond")}</text>
-          <text x="180" y="178" class="pond" text-anchor="middle">${m.pond === null ? "–" : `${m.pond.toFixed(1)} °C`}</text>
+          <text x="180" y="178" class="pond" text-anchor="middle">${m.pond === null ? "–" : `${numberText(m.pond, 1, this.language)} °C`}</text>
           <text x="180" y="200" class="status ${m.position ?? ""}" text-anchor="middle">${status.join(" · ")}</text>
           ${history}
         </svg>
         <div class="stepper" style="--window:${WINDOW}">
           <span class="caption">${t("target")}</span>
           <button @click=${() => this.setTarget(target - m.step)} aria-label="−">−</button>
-          <span class="number">${target.toFixed(1)} °C</span>
+          <span class="number">${numberText(target, 1, this.language)} °C</span>
           <button @click=${() => this.setTarget(target + m.step)} aria-label="+">+</button>
         </div>
         ${m.bandEntity === null ? nothing : html`
           <div class="band-slider">
             <span class="caption">${t("band")}</span>
-            <span class="number">± ${band.toFixed(2)} °C</span>
+            <span class="number">± ${numberText(band, 2, this.language)} °C</span>
             <input type="range" min=${BAND_MIN} max=${BAND_MAX} step=${BAND_STEP} .value=${String(band)}
               aria-label=${t("band")} @input=${this.onSlider} @keydown=${(e: KeyboardEvent) => this.onKey(e, "band")}/>
           </div>`}

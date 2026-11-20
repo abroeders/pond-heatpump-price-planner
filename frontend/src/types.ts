@@ -45,10 +45,15 @@ export const HEAT_PUMP_KEYS = [
 ] as const;
 export type HeatPumpKey = (typeof HEAT_PUMP_KEYS)[number];
 
+export const CARD_LANGUAGES = ["auto", "en", "nl"] as const;
+export type CardLanguage = (typeof CARD_LANGUAGES)[number];
+
 export interface CardConfig {
   type: string;
   device_id?: string;
   hours?: 24 | 36 | 48;
   sections?: Section[];
   heat_pump?: Partial<Record<HeatPumpKey, string>>;
+  /** auto (default): the language of the integration, else the profile language */
+  language?: CardLanguage;
 }

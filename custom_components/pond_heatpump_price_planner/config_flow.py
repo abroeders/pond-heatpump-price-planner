@@ -29,6 +29,7 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_OPTIONS,
     DOMAIN,
+    LANGUAGE_OPTIONS,
     OPT_ALLOW_HIGH,
     OPT_BASE_LOAD,
     OPT_COP_WINDOW,
@@ -38,6 +39,7 @@ from .const import (
     OPT_FORECAST_MULTIPLIER,
     OPT_HIGH_W,
     OPT_HORIZON,
+    OPT_LANGUAGE,
     OPT_LOW_W,
     OPT_MARGIN,
     OPT_OFFSET_HIGH,
@@ -218,6 +220,9 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Required(OPT_COP_WINDOW): _number(7, 42, 1, "d"),
         vol.Required(OPT_RUN_THRESHOLD): _number(0, 2000, 10, "W"),
         vol.Required(OPT_SETTLE): _number(0, 120, 1, "min"),
+        vol.Required(OPT_LANGUAGE): selector.SelectSelector(
+            selector.SelectSelectorConfig(options=list(LANGUAGE_OPTIONS), translation_key=OPT_LANGUAGE)
+        ),
     }
 )
 

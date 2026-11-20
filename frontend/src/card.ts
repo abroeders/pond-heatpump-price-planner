@@ -82,8 +82,12 @@ export class PondHeatpumpPlannerCard extends LitElement {
     if (layout !== this._layout) this._layout = layout;
   }
 
+  private get language(): string {
+    return this._vm?.language ?? this._hass?.locale?.language ?? this._hass?.language ?? "en";
+  }
+
   private get t(): Localizer {
-    return localizer(this._hass?.locale?.language ?? this._hass?.language);
+    return localizer(this.language);
   }
 
   private call(domain: string, service: string, data: Record<string, unknown>) {
@@ -92,13 +96,13 @@ export class PondHeatpumpPlannerCard extends LitElement {
 
   private content(name: Section, vm: CardViewModel): TemplateResult | typeof nothing {
     const t = this.t;
-    const language = this._hass?.locale?.language ?? "en";
+    const language = this.language;
     switch (name) {
       case "heat_pump":
         return vm.illustration ? illustration(vm.illustration, t) : nothing;
       case "thermostat":
         return vm.gauge
-          ? html`<phpc-gauge .model=${vm.gauge} .t=${t}
+          ? html`<phpc-gauge .model=${vm.gauge} .t=${t} .language=${language}
                 @set-target=${(e: CustomEvent) => this.call("climate", "set_temperature", { entity_id: vm.gauge!.thermostat, temperature: e.detail.value })}
                 @set-band=${(e: CustomEvent) => vm.gauge!.bandEntity && this.call("number", "set_value", { entity_id: vm.gauge!.bandEntity, value: e.detail.value })}
               ></phpc-gauge>
