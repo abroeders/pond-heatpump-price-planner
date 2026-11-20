@@ -74,6 +74,7 @@ The integration is split in two layers:
 | Single responsibility | one concern per module: model (`model.py`), learning (`learning.py`), seeding (`seeding.py`), tracking (`tracking.py`), persistence (`storage.py`), recorder access (`history.py`) | each part changes for one reason and is tested alone |
 | Open/closed + **Strategy** | `Fitter` protocol with `SlowFit`, `CoolingFit` | a new fit (e.g. solar gain) is a new class, existing fits stay untouched |
 | **Facade** | `Learner` runs the fits in order | the rest of the integration calls one method |
+| **Facade** | `PlannerTexts` over Home Assistant's translation helper (#28) | entities ask for a name or a text by key; the translation files stay the only source of texts |
 | Dependency inversion + **Adapter** | `seeding.seed()` depends on the `HistorySource` protocol; `RecorderHistory` adapts the recorder | the core never imports Home Assistant and is tested with a fake source |
 | **Repository** | `PlannerStore` | one place that loads and saves samples, COP buckets, parameters and settings |
 | **Observer** | `PlannerCoordinator` (DataUpdateCoordinator) with `PlannerEntity` subclasses | entities only read state; all logic lives in the coordinator and the core |
@@ -676,6 +677,7 @@ classDiagram
         +FlowAccumulator flow
         +PredictionTracker tracker
         +PlannerData data
+        +PlannerTexts texts
         +async_start()
         +async_stop()
         +async_replan()
@@ -705,7 +707,14 @@ classDiagram
         <<CoordinatorEntity>>
         +unique_id
         +translation_key
+        +name (only with a fixed language)
         +device_info
+    }
+    class PlannerTexts {
+        +language: str | None
+        +async_load(hass, option)$ PlannerTexts
+        +entity_name(key) str | None
+        +attribute_text(key, attribute, code) str | None
     }
     class PlannerSensor
     class PondThermostat {
@@ -723,6 +732,7 @@ classDiagram
     PlannerCoordinator o-- InputReader
     PlannerCoordinator o-- PlannerStore
     PlannerCoordinator o-- HeatPumpController
+    PlannerCoordinator o-- PlannerTexts
     PlannerEntity <|-- PlannerSensor
     PlannerEntity <|-- PondThermostat
     PlannerEntity <|-- SettingNumber
@@ -730,6 +740,7 @@ classDiagram
     PlannerEntity <|-- CopMethodSelect
     PlannerEntity <|-- RelearnButton
     PlannerEntity --> PlannerCoordinator : observes
+    PlannerEntity ..> PlannerTexts : name, *_text attributes
 ```
 
 ### 7.2 Setup
@@ -740,6 +751,7 @@ sequenceDiagram
     participant Init as async_setup_entry
     participant Co as PlannerCoordinator
     participant Store as PlannerStore
+    participant Texts as PlannerTexts
     participant Ent as platforms
     HA->>Init: config entry
     Init->>Co: PlannerCoordinator(hass, entry)
@@ -751,6 +763,9 @@ sequenceDiagram
     alt start fails
         Init->>Co: async_stop() (no lingering timers)
     end
+    Init->>Texts: async_load(hass, language option)
+    Texts->>HA: async_get_translations(fixed language or system language, "entity")
+    Init->>Co: texts
     Init->>Ent: forward setup: sensor, number, switch, select, button
     Ent->>Co: observe
 ```
@@ -827,6 +842,7 @@ classDiagram
     class PhpcGauge {
         <<LitElement phpc-gauge>>
         +model GaugeModel
+        +language
         +set-target event
         +set-band event
     }
@@ -874,10 +890,12 @@ classDiagram
     class localize {
         <<module>>
         +localizer(language) Localizer
+        +cardLanguage(config, plannerLanguage, profile) string
     }
     class format {
         <<module>>
         +clockText(ms, language) string
+        +numberText(value, digits, language) string
         +time(iso, language) string
         +num / fixed / power / temperature / withUnit
     }
@@ -902,6 +920,8 @@ classDiagram
     PondHeatpumpPlannerCard ..> localize
     PondHeatpumpPlannerCard ..> layout : ResizeObserver width
     PondHeatpumpPlannerCardEditor ..> entities
+    viewmodel ..> localize : cardLanguage
+    PondHeatpumpPlannerCardEditor ..> localize : cardLanguage, labels
 ```
 
 ### 8.2 Loading and updating
@@ -958,4 +978,20 @@ stateDiagram-v2
         compressor: piston and refrigerant dashes
         pond waves: always, except reduced motion
     end note
+```
+
+### 8.5 Language (#28)
+
+The card picks one language for its texts, dates and numbers; the integration fixes its entity names and the
+`*_text` attributes only when its option is not automatic.
+
+```mermaid
+flowchart TD
+    A{card option language} -->|en / nl| L[that language]
+    A -->|auto or missing| B{mode sensor attribute language}
+    B -->|en / nl| L2[the integration's language]
+    B -->|auto or missing| C[profile language hass.locale.language]
+    L --> T[localizer, dayText, numberText]
+    L2 --> T
+    C --> T
 ```

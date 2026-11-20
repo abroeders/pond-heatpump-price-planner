@@ -103,6 +103,7 @@ type: custom:pond-heatpump-planner-card
 device_id: 0123456789abcdef   # the planner device
 hours: 36                     # width of the plan chart: 24, 36 or 48 hours, ending at the last known price
 sections: [heat_pump, thermostat, plan, figures, switches, model]   # order and visibility
+language: auto                # auto (follow the integration), en or nl
 heat_pump:                    # entities of the drawing, all optional
   water_in: sensor.heat_pump_water_inlet_temperature
   water_out: sensor.heat_pump_water_outlet_temperature
@@ -124,6 +125,7 @@ heat_pump:                    # entities of the drawing, all optional
 | `device_id` | the first planner device |
 | `hours` | 36 (for 48, also set the integration's *Planning horizon* to 48 h) |
 | `sections` | all, in the order above |
+| `language` | `auto`: the [language option](configuration.md#language) of the integration, or your profile language when that is automatic. The language sets the texts, dates (`vr 21 nov`) and numbers (`€ 0,33`); times are always 24-hour |
 | `heat_pump.water_in`, `water_out`, `air_in`, `power` | the entities linked in the integration |
 | other `heat_pump` keys | none (left out of the drawing) |
 

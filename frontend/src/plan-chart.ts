@@ -14,7 +14,7 @@ import {
   type ChartScales,
   type HoverInfo,
 } from "./chart";
-import { clockText } from "./format";
+import { clockText, numberText } from "./format";
 import type { Localizer } from "./localize";
 import type { PlanModel } from "./viewmodel";
 
@@ -28,11 +28,11 @@ const dayText = (ms: number, language: string) =>
 /** The lines of the tooltip for one quarter. */
 export function tooltipLines(info: HoverInfo, t: Localizer, language: string): string[] {
   const lines = [`${dayText(info.t, language)} ${clockText(info.t, language)}–${clockText(info.t + QUARTER, language)}`];
-  if (info.temp !== null) lines.push(`${info.temp.toFixed(2)} °C ${t(info.measured ? "tip_measured" : "tip_predicted")}`);
+  if (info.temp !== null) lines.push(`${numberText(info.temp, 2, language)} °C ${t(info.measured ? "tip_measured" : "tip_predicted")}`);
   if (info.mode !== null) lines.push(`${t("tip_mode")}: ${t(info.mode)}`);
-  if (info.price !== null) lines.push(`€ ${info.price.toFixed(3)}/kWh${info.known ? "" : ` (${t("tip_forecast")})`}`);
+  if (info.price !== null) lines.push(`€ ${numberText(info.price, 3, language)}/kWh${info.known ? "" : ` (${t("tip_forecast")})`}`);
   if (info.expensive) lines.push(t("tip_expensive"));
-  if (info.surplus) lines.push(`${t("tip_solar")} ${info.surplus.toFixed(1)} kW`);
+  if (info.surplus) lines.push(`${t("tip_solar")} ${numberText(info.surplus, 1, language)} kW`);
   return lines;
 }
 
@@ -93,10 +93,10 @@ export function planChart(
       <path d=${predictedPath(plan, s)} class="temp"/>
       ${s.knownUntil === null ? svg`` : svg`<line x1=${s.x(s.knownUntil)} x2=${s.x(s.knownUntil)} y1="28" y2=${H - 28} class="known"/>`}
       <line x1=${nowX} x2=${nowX} y1="20" y2=${H - 28} class="now"/>
-      <text x="4" y="20" class="axis">${s.tempMax.toFixed(1)} °C</text>
-      <text x="4" y=${H - 30} class="axis">${s.tempMin.toFixed(1)}</text>
-      <text x=${W - 4} y="20" class="axis" text-anchor="end">€ ${s.priceMax.toFixed(2)}</text>
-      <text x=${W - 4} y=${H - 30} class="axis" text-anchor="end">€ ${s.priceMin.toFixed(2)}</text>
+      <text x="4" y="20" class="axis">${numberText(s.tempMax, 1, language)} °C</text>
+      <text x="4" y=${H - 30} class="axis">${numberText(s.tempMin, 1, language)}</text>
+      <text x=${W - 4} y="20" class="axis" text-anchor="end">€ ${numberText(s.priceMax, 2, language)}</text>
+      <text x=${W - 4} y=${H - 30} class="axis" text-anchor="end">€ ${numberText(s.priceMin, 2, language)}</text>
       ${ticks}
       ${days}
       ${hair}

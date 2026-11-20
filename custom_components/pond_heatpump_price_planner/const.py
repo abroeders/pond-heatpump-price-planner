@@ -44,6 +44,11 @@ OPT_HIGH_W = "high_w"
 OPT_COP_WINDOW = "cop_window"
 OPT_RUN_THRESHOLD = "run_threshold"
 OPT_SETTLE = "settle_minutes"
+OPT_LANGUAGE = "language"
+
+LANGUAGE_AUTO = "auto"
+LANGUAGES = ("en", "nl")
+LANGUAGE_OPTIONS = (LANGUAGE_AUTO, *LANGUAGES)
 
 DEFAULT_OPTIONS = {
     OPT_PRICE_MULTIPLIER: 1.0,
@@ -68,6 +73,7 @@ DEFAULT_OPTIONS = {
     OPT_COP_WINDOW: 14,
     OPT_RUN_THRESHOLD: 100,
     OPT_SETTLE: 20,
+    OPT_LANGUAGE: LANGUAGE_AUTO,
 }
 
 # settings held by entities, stored with the samples

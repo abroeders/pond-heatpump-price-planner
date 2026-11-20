@@ -10,7 +10,7 @@ from .coordinator import PlannerCoordinator
 
 
 class PlannerEntity(CoordinatorEntity[PlannerCoordinator]):
-    """Observes the coordinator; the name comes from the translation key."""
+    """Observes the coordinator; the name comes from the translation key, or from the language option."""
 
     _attr_has_entity_name = True
 
@@ -19,6 +19,8 @@ class PlannerEntity(CoordinatorEntity[PlannerCoordinator]):
         entry = coordinator.entry
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_translation_key = key
+        if (name := coordinator.texts.entity_name(key)) is not None:
+            self._attr_name = name
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name=entry.title,

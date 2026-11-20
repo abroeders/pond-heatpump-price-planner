@@ -94,6 +94,7 @@ from .core.tracking import PredictionTracker
 from .core.tuning import TuningResult, tune_surcharge
 from .history import async_seed_store
 from .inputs import InputReader
+from .language import PlannerTexts
 from .storage import PlannerStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -144,6 +145,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         self.entry = entry
         self.links: dict[str, Any] = dict(entry.data)
         self.options: dict[str, Any] = {**DEFAULT_OPTIONS, **entry.options}
+        self.texts = PlannerTexts(None, {})  # loaded in async_setup_entry
         self.store = PlannerStore(hass, entry.entry_id)
         self.inputs = InputReader(hass, self.links, self.options)
         self.classifier = ModeClassifier(float(self.options[OPT_LOW_W]), float(self.options[OPT_HIGH_W]))

@@ -5,23 +5,28 @@ export function num(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function fixed(value: number | null, digits: number): string | null {
-  return value === null ? null : value.toFixed(digits);
+/** Format a number without grouping, with a fixed number of decimal places. */
+export function numberText(value: number, digits: number, language: string): string {
+  return new Intl.NumberFormat(language, { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false }).format(value);
+}
+
+export function fixed(value: number | null, digits: number, language = "en"): string | null {
+  return value === null ? null : numberText(value, digits, language);
 }
 
 /** Power in W, shown as W below 1 kW and as kW (2 decimals) from 1 kW. */
-export function power(watts: number | null): string | null {
+export function power(watts: number | null, language = "en"): string | null {
   if (watts === null) return null;
-  return Math.abs(watts) >= 1000 ? `${(watts / 1000).toFixed(2)} kW` : `${Math.round(watts)} W`;
+  return Math.abs(watts) >= 1000 ? `${numberText(watts / 1000, 2, language)} kW` : `${Math.round(watts)} W`;
 }
 
-export function temperature(value: number | null): string | null {
-  return value === null ? null : `${value.toFixed(1)} °C`;
+export function temperature(value: number | null, language = "en"): string | null {
+  return value === null ? null : `${numberText(value, 1, language)} °C`;
 }
 
-export function withUnit(value: number | null, unit: string | undefined, digits = 0): string | null {
+export function withUnit(value: number | null, unit: string | undefined, digits = 0, language = "en"): string | null {
   if (value === null) return null;
-  return unit ? `${value.toFixed(digits)} ${unit}` : value.toFixed(digits);
+  return unit ? `${numberText(value, digits, language)} ${unit}` : numberText(value, digits, language);
 }
 
 /** Clock time in 24-hour format. */

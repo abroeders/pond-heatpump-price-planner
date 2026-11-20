@@ -107,7 +107,8 @@
           "high_w": "Power threshold low/high",
           "cop_window": "COP window",
           "run_threshold": "COP: running above",
-          "settle_minutes": "COP: settle time after a start"
+          "settle_minutes": "COP: settle time after a start",
+          "language": "Language"
         },
         "data_description": {
           "price_multiplier": "Effective price = price × multiplier + addition. For a bare exchange price in the Netherlands: 1.21 and about 0.136.",
@@ -116,12 +117,20 @@
           "margin": "The plan stays this far inside the band to absorb prediction errors.",
           "surcharge_auto": "Every night the last 14 days are replayed and the surcharge with the lowest real cost is chosen.",
           "offset_low": "Setpoint = rounded inlet temperature + offset of the mode.",
-          "offset_start": "Used for low and high while the heat pump is not running: a stopped heat pump often needs a higher setpoint to start. Back to the mode's offset as soon as the power reaches the off/low threshold."
+          "offset_start": "Used for low and high while the heat pump is not running: a stopped heat pump often needs a higher setpoint to start. Back to the mode's offset as soon as the power reaches the off/low threshold.",
+          "language": "Language of the entity names, the explanatory attributes and the card. Automatic follows Home Assistant. Screens drawn by Home Assistant itself stay in your profile language."
         }
       }
     }
   },
   "selector": {
+    "language": {
+      "options": {
+        "auto": "Automatic",
+        "en": "English",
+        "nl": "Nederlands"
+      }
+    },
     "surplus_type": {
       "options": {
         "pv_power": "PV power (W)",
@@ -133,7 +142,20 @@
   "entity": {
     "climate": {
       "thermostat": {
-        "name": "Thermostat"
+        "name": "Thermostat",
+        "state_attributes": {
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "plan": "following the plan",
+              "no_plan": "no plan",
+              "below_band": "below the band",
+              "far_below_band": "far below the band",
+              "above_band": "above the band",
+              "no_pond_temperature": "no pond temperature"
+            }
+          }
+        }
       }
     },
     "sensor": {
@@ -143,6 +165,39 @@
           "off": "Off",
           "low": "Low",
           "high": "High"
+        },
+        "state_attributes": {
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "plan": "following the plan",
+              "no_plan": "no plan",
+              "below_band": "below the band",
+              "far_below_band": "far below the band",
+              "above_band": "above the band",
+              "no_pond_temperature": "no pond temperature"
+            }
+          },
+          "apply_result": {
+            "name": "Setpoint result",
+            "state": {
+              "sent": "setpoint sent",
+              "unchanged": "setpoint unchanged",
+              "dry_run": "dry run, nothing sent",
+              "heat_pump_off": "heat pump switched off",
+              "unavailable": "heat pump unavailable",
+              "error": "error while sending"
+            }
+          },
+          "price_status": {
+            "name": "Price status",
+            "state": {
+              "ok": "prices known",
+              "limited_prices": "few prices known",
+              "forecast_only": "forecast prices only",
+              "no_prices": "no prices"
+            }
+          }
         }
       },
       "next_start": {

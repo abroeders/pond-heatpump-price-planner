@@ -77,8 +77,25 @@ A solar forecast sensor is read from a `forecast` list with `w` (W) per entry, o
 | `cop_window` | 14 d | 7–42 d | window of the COP sensors | shorter: follows changes faster, more noise |
 | `run_threshold` | 100 W | 0–2000 W | flow COP: running above this power | – |
 | `settle_minutes` | 20 min | 0–120 min | flow COP: ignore this long after each start | lower: includes unstable start-up readings |
+| `language` | automatic | automatic, English, Nederlands | language of the entity names, the explanatory attributes (`reason_text` and friends) and the card | see below |
 
 Saving the options restarts the planner. The learned model and the stored data are kept.
+
+### Language
+
+Home Assistant has two languages: the **profile language** of each user (menus, settings, dialogs) and the
+**system language** (*Settings → System → General*), which names the entities of integrations. With
+`language` on *automatic* the planner follows them: entity names in the system language, the card in your
+profile language.
+
+With *English* or *Nederlands* the planner uses that language whatever Home Assistant uses, for example a
+Dutch pond planner in an English Home Assistant:
+- entity names, e.g. *Stand* instead of *Mode*; entity ids do not change;
+- the text attributes `reason_text`, `apply_result_text` and `price_status_text` (see [entities](entities.md));
+- the card: texts, dates and numbers (`vr 21 nov`, `€ 0,33`), unless the card has its own language option.
+
+Screens that Home Assistant draws itself stay in your profile language: this options form, the setup and
+repair dialogs, and the translated states and attributes in the entity dialog.
 
 ### Finding the setpoint offsets for another heat pump
 
