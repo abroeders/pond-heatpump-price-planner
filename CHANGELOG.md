@@ -7,6 +7,18 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Flow COP with whole-degree water sensors: option *COP: inlet temperature* (heat pump inlet or the pond
+  sensor), an outlet correction learned while the heat pump is off and water flows (or set by hand with
+  *COP: outlet correction*), and an optional link to a circulation sensor. The flow COP shows the inlet, the
+  correction, its source and the calibration hours (#32).
+
+### Fixed
+
+- After a start-up the flow method waited for the first change of each water temperature before counting;
+  it now starts from the current values (#32).
+
 ## [2026.11.2] - 2026-11-20
 
 ### Fixed

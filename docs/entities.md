@@ -81,7 +81,7 @@ See [COP, heat loss and thermal power](cop.md) for the formulas.
 | Key | Unit | Meaning | Attributes |
 |---|---|---|---|
 | `cop` | – | COP by the chosen method over the COP window | `by_outdoor`, `by_power`, `hours`, `hours_by_outdoor`, `hours_by_power`, `window_days`, `method` |
-| `cop_flow` | – | COP by the flow method | as above, `flow` |
+| `cop_flow` | – | COP by the flow method | as above, `flow`, `inlet`, `outlet_offset`, `offset_source` (`learned`, `manual`, `none`), `calibration_hours`, `calibrating` (see [COP](cop.md#calibrating-whole-degree-sensors)) |
 | `cop_pond` | – | COP by the pond method | as above, `loss_a_w`, `loss_b_w_per_k` |
 | `heat_loss` | W/K | heat lost per kelvin pond–outdoor difference (model) | `loss_a_w`, `loss_b_w_per_k`, `cover` |
 | `thermal_power` | W | heat delivered to the pond now (model) | `flow_mean_w`, `mode` |
