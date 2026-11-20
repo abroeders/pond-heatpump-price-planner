@@ -60,13 +60,21 @@ def _plan_list(c: PlannerCoordinator) -> list[dict[str, Any]]:
 
 
 def _pond_history(c: PlannerCoordinator) -> list[dict[str, Any]]:
-    """Pond temperature at the end of each stored quarter of the last 48 hours."""
+    """Pond temperature at the end of each stored quarter of the last 48 hours, with the measured mode
+    and the price of that quarter when they are known."""
     since = time.time() - POND_HISTORY_HOURS * 3600
-    return [
-        {"time": _ts(s.t + 900).isoformat(), "temp": round(s.pond, 2)}
-        for s in c.store.samples
-        if s.pond is not None and s.t + 900 >= since
-    ]
+    out = []
+    for s in c.store.samples:
+        if s.pond is None or s.t + 900 < since:
+            continue
+        item: dict[str, Any] = {"time": _ts(s.t + 900).isoformat(), "temp": round(s.pond, 2)}
+        mode = c.classifier.mode(s.power)
+        if mode is not None:
+            item["mode"] = mode
+        if s.price is not None:
+            item["price"] = round(s.price, 4)
+        out.append(item)
+    return out
 
 
 def _cop_attrs(result: CopResult | None, c: PlannerCoordinator) -> dict[str, Any]:

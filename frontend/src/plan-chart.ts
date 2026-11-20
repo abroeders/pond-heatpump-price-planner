@@ -7,6 +7,7 @@ import {
   hoverInfo,
   measuredPath,
   predictedPath,
+  pricePath,
   quarterAt,
   scales,
   summary,
@@ -54,10 +55,14 @@ export function planChart(
     const sun = x.surplus ? svg`<rect x=${s.x(x.t)} y=${H - 26} width=${bw} height="4" class="sun"/>` : svg``;
     return svg`${expensive}${sun}<rect x=${s.x(x.t)} y=${H - 28 - h} width=${bw} height=${h} class="bar ${x.mode}"/>`;
   });
-  const price = q
-    .filter((x) => x.t >= s.start && x.t < s.end)
-    .map((x, i) => `${i ? "L" : "M"}${s.x(x.t).toFixed(1)} ${s.yPrice(x.price).toFixed(1)} H${s.x(x.t + QUARTER).toFixed(1)}`)
-    .join(" ");
+  // measured quarters before the plan: lighter bars, so they stay apart from the plan
+  const pastBars = s.past.map((x, i) => {
+    const expensive = s.pastExpensive[i] ? svg`<rect x=${s.x(x.t)} y="28" width=${bw} height=${H - 56} class="expensive"/>` : svg``;
+    if (x.mode === null) return expensive;
+    const h = 18 * level[x.mode];
+    return svg`${expensive}<rect x=${s.x(x.t)} y=${H - 28 - h} width=${bw} height=${h} class="bar past ${x.mode}"/>`;
+  });
+  const price = pricePath(plan, s);
   const bandTop = s.yTemp(plan.target + plan.band);
   const bandBottom = s.yTemp(plan.target - plan.band);
   const nowX = Math.min(Math.max(s.x(plan.now), 28), W - 28);
@@ -86,6 +91,7 @@ export function planChart(
     <svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label=${summary(plan, t, language)}>
       ${gridLines}
       <rect x="28" y=${bandTop} width=${W - 56} height=${bandBottom - bandTop} class="band"/>
+      ${pastBars}
       ${bars}
       <line x1="28" x2=${W - 28} y1=${s.yTemp(plan.target)} y2=${s.yTemp(plan.target)} class="target"/>
       <path d=${price} class="price"/>
@@ -202,7 +208,7 @@ export function legendItems(plan: PlanModel): LegendItem[] {
     { key: "high", swatch: "high" },
     { key: "price", swatch: "step" },
   ];
-  if (s.expensive.some(Boolean)) items.push({ key: "legend_expensive", swatch: "expensive" });
+  if (s.expensive.some(Boolean) || s.pastExpensive.some(Boolean)) items.push({ key: "legend_expensive", swatch: "expensive" });
   if (plan.quarters.some((q) => q.surplus)) items.push({ key: "legend_solar", swatch: "solar" });
   items.push({ key: "now", swatch: "now" });
   if (s.knownUntil !== null) items.push({ key: "legend_forecast", swatch: "dotted" });
@@ -234,6 +240,7 @@ export const planChartStyles = css`
   .expensive { fill: var(--warning-color, #ff9800); opacity: 0.07; }
   .sun { fill: #fdd835; }
   .bar.low { fill: #1e88e5; opacity: 0.55; } .bar.high { fill: #ef6c00; opacity: 0.6; } .bar.off { fill: none; }
+  .bar.past.low { opacity: 0.3; } .bar.past.high { opacity: 0.35; }
   .target { stroke: var(--primary-text-color); stroke-dasharray: 4 4; opacity: 0.6; }
   .temp { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 2.5; stroke-dasharray: 7 4; }
   .measured { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 2.5; }

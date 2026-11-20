@@ -20,12 +20,13 @@ export function plan(n = 8) {
   }));
 }
 
-/** 24 h of pond temperatures, one per quarter, ending at 11:00 UTC on 17 Nov. */
-export function pondHistory(): { time: string; temp: number }[] {
+/** 24 h of pond temperatures, one per quarter, ending at 11:00 UTC on 17 Nov; the last 8 with mode and price. */
+export function pondHistory(): { time: string; temp: number; mode?: string; price?: number }[] {
   const end = Date.parse("2026-11-17T11:00:00Z");
   return Array.from({ length: 96 }, (_, i) => ({
     time: new Date(end - (95 - i) * 900e3).toISOString(),
     temp: Math.round((14.5 + 0.2 * Math.sin(i / 10)) * 100) / 100,
+    ...(i >= 88 ? { mode: i % 2 ? "high" : "low", price: 0.25 } : {}),
   }));
 }
 

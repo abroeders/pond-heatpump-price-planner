@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { QUARTER, chartWindow, hoverInfo, measuredPath, predictedPath, quarterAt, scales, runs, summary, timeTicks } from "../src/chart";
+import { QUARTER, chartWindow, hoverInfo, measuredPath, pastQuarters, predictedPath, pricePath, quarterAt, scales, runs, summary, timeTicks } from "../src/chart";
 import { legendItems, tooltipLines } from "../src/plan-chart";
 import { chartWidth, columnsOf, layoutFor, spanFor } from "../src/layout";
 import { plan as planAttr } from "./fixtures";
@@ -61,6 +61,8 @@ describe("time ticks and sparkline", () => {
     const vm = buildViewModel(fakeHass(), config, NOW);
     expect(vm.gauge!.history.length).toBe(96);
     expect(vm.gauge!.history[0].t).toBeLessThan(vm.gauge!.history[95].t);
+    expect(vm.gauge!.history[95]).toMatchObject({ mode: "high", price: 0.25 });
+    expect(vm.gauge!.history[0]).toMatchObject({ mode: null, price: null });
   });
 });
 
@@ -212,6 +214,31 @@ describe("chart window, measured line and hover", () => {
     expect(tooltipLines({ ...planned, known: true }, localizer("nl"), "nl")).toContain("€ 0,300/kWh");
     expect(tooltipLines(past, localizer("nl"), "nl")[1]).toBe("14,20 °C gemeten");
     expect(tooltipLines(empty, localizer("en"), "en")).toHaveLength(1);
+  });
+
+  it("shows the measured modes and prices before the plan", () => {
+    const plan = model();
+    const start = plan.quarters[0].t;
+    // the last 4 quarters before the plan: low, high, off and one without power; prices 0.2, 0.2, 0.2 and 0.5
+    plan.history = plan.history.map((p, i) =>
+      i < 8 ? p : { ...p, mode: (["low", "high", "off", null] as const)[i - 8], price: i === 11 ? 0.5 : 0.2 },
+    );
+    const s = scales(plan, 600, 220);
+    expect(pastQuarters(plan, s.start).map((p) => p.t)).toEqual([0, 1, 2, 3].map((i) => start - H + i * QUARTER));
+    expect(s.past.map((p) => p.mode)).toEqual(["low", "high", "off", null]);
+    expect(s.priceMin).toBe(0.2); // the scale includes the past prices
+    expect(s.priceMax).toBe(0.5);
+    expect(s.pastExpensive).toEqual([false, false, false, true]);
+    expect(s.expensive.every((e) => !e)).toBe(true); // the plan marking does not change
+    const path = pricePath(plan, s);
+    expect(path.startsWith(`M${s.x(start - H).toFixed(1)}`)).toBe(true);
+    expect(path.match(/M/g)).toHaveLength(1); // one line from the past into the plan
+    const past = hoverInfo(plan, s, start - QUARTER);
+    expect(past).toMatchObject({ temp: 14.2, measured: true, mode: null, price: 0.5, expensive: true });
+    expect(hoverInfo(plan, s, start - 3 * QUARTER)).toMatchObject({ mode: "high", price: 0.2, expensive: false });
+    const lines = tooltipLines(past, localizer("en"), "en");
+    expect(lines).toContain("€ 0.500/kWh");
+    expect(lines).toContain("expensive quarter");
   });
 
   it("uses 24-hour times in tooltip lines", () => {
