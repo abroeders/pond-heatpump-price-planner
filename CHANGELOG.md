@@ -2,9 +2,17 @@
 
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project uses calendar versioning like Home Assistant (`YEAR.MONTH.PATCH`) from 2026.11.0 on;
+earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2026.11.0] - 2026-11-20
+
+### Fixed
+
+- The card shows times of day in 24-hour format, also when Home Assistant uses English (it showed AM/PM).
+  The lower label of the price axis shows the euro sign too (#26).
 
 ## [0.5.1] - 2026-11-18
 
@@ -115,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.0...HEAD
+[2026.11.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.1...v2026.11.0
 [0.5.1]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v0.3.0...v0.4.0

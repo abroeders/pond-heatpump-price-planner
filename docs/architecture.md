@@ -875,6 +875,12 @@ classDiagram
         <<module>>
         +localizer(language) Localizer
     }
+    class format {
+        <<module>>
+        +clockText(ms, language) string
+        +time(iso, language) string
+        +num / fixed / power / temperature / withUnit
+    }
     class layout {
         <<module>>
         +layoutFor(width) Layout
@@ -889,6 +895,9 @@ classDiagram
     PhpcPlanChart ..> templates
     PhpcPlanChart ..> chart
     templates ..> chart
+    viewmodel ..> format
+    templates ..> format : 24-hour clock, units
+    chart ..> format
     PhpcGauge ..> gaugeMath
     PondHeatpumpPlannerCard ..> localize
     PondHeatpumpPlannerCard ..> layout : ResizeObserver width
