@@ -44,8 +44,8 @@ class PlannerTexts:
 
     @classmethod
     async def async_load(cls, hass: HomeAssistant, option: str) -> PlannerTexts: ...
-    def entity_name(self, platform: str, key: str) -> str | None: ...
-    def attribute_text(self, platform: str, key: str, attribute: str, code: str | None) -> str | None: ...
+    def entity_name(self, key: str) -> str | None: ...
+    def attribute_text(self, key: str, attribute: str, code: str | None) -> str | None: ...
 ```
 
 - `async_load` resolves the option: `auto` → the system language when it is `en` or `nl`, else `en`
@@ -53,11 +53,13 @@ class PlannerTexts:
   `homeassistant.helpers.translation.async_get_translations(hass, language, "entity", [DOMAIN])`, so the
   existing `translations/en.json` and `nl.json` remain the only source of texts.
 - `entity_name` returns `None` for `auto`, so Home Assistant translates the name as now.
-- `async_setup_entry` loads the texts once and keeps them in the runtime data next to the coordinator.
+- Entity keys are unique over all platforms, so a key alone identifies an entity.
+- `async_setup_entry` loads the texts once and hands them to the coordinator (`coordinator.texts`), which the
+  entities already observe.
 
 ### Entity names
 
-`PlannerEntity.__init__` sets `_attr_name = texts.entity_name(platform, key)` when it is not `None`.
+`PlannerEntity.__init__` sets `_attr_name = texts.entity_name(key)` when it is not `None`.
 `_attr_translation_key` stays, so the card keeps finding the entities by translation key, and entity ids do not
 change (they are fixed in the entity registry).
 

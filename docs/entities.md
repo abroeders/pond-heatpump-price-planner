@@ -7,7 +7,7 @@ All entities belong to one device per planner. Entity IDs are derived from the d
 
 | Key | Type | Meaning |
 |---|---|---|
-| `thermostat` | climate | the pond as a thermostat: current temperature = pond temperature, target temperature (5–28 °C, step 0.1), HVAC action *heating* when the applied mode is low or high and *idle* when off. Only the HVAC mode *heat* exists; whether the planner controls the heat pump is the `control` switch. Attributes: `mode`, `reason`, `band`, `control`. |
+| `thermostat` | climate | the pond as a thermostat: current temperature = pond temperature, target temperature (5–28 °C, step 0.1), HVAC action *heating* when the applied mode is low or high and *idle* when off. Only the HVAC mode *heat* exists; whether the planner controls the heat pump is the `control` switch. Attributes: `mode`, `reason`, `reason_text`, `band`, `control`. |
 
 Set the target with the thermostat card, the more-info dialog, `climate.set_temperature` or a voice assistant.
 Until version 0.1.0 the target was a number entity; it is removed automatically.
@@ -30,7 +30,7 @@ The settings are stored by the integration and survive a restart.
 
 | Key | Unit | Meaning | Attributes |
 |---|---|---|---|
-| `mode` | `off`, `low`, `high` | the mode applied (or, in dry run, that would be applied) now | `reason`, `plan_mode`, `measured_mode`, `control`, `would_set`, `apply_result`, `mismatch`, `price_status`, `horizon_end`, `plan`, `pond_history` |
+| `mode` | `off`, `low`, `high` | the mode applied (or, in dry run, that would be applied) now | `reason`, `reason_text`, `plan_mode`, `measured_mode`, `control`, `would_set`, `apply_result`, `apply_result_text`, `mismatch`, `price_status`, `price_status_text`, `language`, `horizon_end`, `plan`, `pond_history` |
 | `next_start` | timestamp | next quarter in which the plan switches the heat pump on | – |
 | `next_stop` | timestamp | next quarter in which the plan switches it off | – |
 | `planned_energy` | kWh | planned electricity (not heat) for the next 24 h | – |
@@ -66,6 +66,13 @@ quarter) and `temp`. The card draws the last 24 h in the thermostat and the meas
 | `forecast_only` | only forecast prices |
 | `limited_prices` | fewer than 4 h of prices, extended with their mean |
 | `no_prices` | no prices |
+
+**`reason_text`**, **`apply_result_text`**, **`price_status_text`**: the code of `reason`, `apply_result` and
+`price_status` as a readable text in the [language](configuration.md#language) of the planner, e.g.
+`volgens plan` for `plan` in Dutch. Use the codes in automations; the texts are for display. They are not
+stored in the recorder.
+
+**`language`**: the language option of the planner (`auto`, `en`, `nl`); the card follows it.
 
 ## COP and pond
 
