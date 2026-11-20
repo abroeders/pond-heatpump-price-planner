@@ -178,7 +178,7 @@ class CopBucket:
     power_w: float; outdoor: float | None
 class FlowAccumulator:          # fed with state changes, yields hourly buckets
     def update(self, t, *, power=None, t_in=None, t_out=None, energy=None) -> None
-    def close_hour(self, t) -> CopBucket | None
+    def close_hour(self, t) -> list[CopBucket]  # all hours finished since the last call (#30)
 def cop_flow(buckets, now, window_days, low_w, high_w) -> CopResult
 def fit_loss(samples, now, days, capacity) -> LossFit | None
 def cop_pond(samples, loss, now, window_days, capacity, low_w, high_w) -> CopResult
@@ -186,7 +186,8 @@ def cop_pond(samples, loss, now, window_days, capacity, low_w, high_w) -> CopRes
 
 ## 9. Tests
 
-- **`FlowAccumulator` timing:** settle time, the run threshold, a counter reset and gaps.
+- **`FlowAccumulator` timing:** settle time, the run threshold, a counter reset and gaps; a late hourly timer
+  and an update that crosses the hour (#30).
 - **Synthetic data with 1 K quantisation:** the true COP of 5.0 is recovered within 5 % over 14 days;
   a daily COP would be off by more than 50 % (shows why there is no daily value).
 - **`fit_loss`:** recovers `a` and `b` from synthetic off-periods with noise.

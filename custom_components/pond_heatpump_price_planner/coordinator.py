@@ -301,8 +301,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         await self.async_replan()
 
     async def _on_hour(self, now: datetime) -> None:
-        bucket = self.flow.close_hour(now.timestamp())
-        if bucket is not None:
+        for bucket in self.flow.close_hour(now.timestamp()):
             self.store.add_bucket(bucket)
         await self.hass.async_add_executor_job(self._update_cop, now.timestamp())
         self.async_set_updated_data(self.data)
