@@ -23,6 +23,7 @@ sys.path[:0] = [str(ROOT / "custom_components" / "pond_heatpump_price_planner"),
 
 from conftest import epoch, load_reference  # noqa: E402
 from core.costs import EnergyCosts  # noqa: E402
+from core.model import ModeClassifier  # noqa: E402
 from core.planner import DynamicProgrammingPlanner, PlanRequest  # noqa: E402
 from replay import REFERENCE_PARAMS  # noqa: E402
 
@@ -69,13 +70,20 @@ def example_plan() -> tuple[list[dict], dict]:
 
 
 def pond_history() -> list[dict]:
-    """The measured pond temperature of the 48 hours before the start, from the reference data."""
+    """Measured pond temperature, mode and price of the 48 hours before the start, from the reference data."""
     start = epoch(START)
-    return [
-        {"time": datetime.fromtimestamp(r["t"] + 900, UTC).isoformat(), "temp": round(r["pond"], 2)}
-        for r in load_reference()
-        if start - 48 * 3600 <= r["t"] < start - 900 and r["pond"] is not None
-    ]
+    classifier = ModeClassifier()
+    out = []
+    for r in load_reference():
+        if not (start - 48 * 3600 <= r["t"] < start and r["pond"] is not None):
+            continue
+        item = {"time": datetime.fromtimestamp(r["t"] + 900, UTC).isoformat(), "temp": round(r["pond"], 2)}
+        if (mode := classifier.mode(r["power_w"])) is not None:
+            item["mode"] = mode
+        if r["price"] is not None:
+            item["price"] = round(r["price"], 4)
+        out.append(item)
+    return out
 
 
 def hass_json(now_iso: str) -> dict:

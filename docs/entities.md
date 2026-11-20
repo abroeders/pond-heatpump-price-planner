@@ -56,7 +56,8 @@ quarter), `price` (effective €/kWh), `known` (false where the price comes from
 solar configured, `surplus` (kW). It is not stored in the recorder.
 
 **`pond_history`**: the pond temperature of the last 48 h, one entry per quarter with `time` (end of the
-quarter) and `temp`. The card draws the last 24 h in the thermostat and the measured part of the plan chart. It is not stored in the recorder.
+quarter) and `temp`, plus `mode` (the measured mode: off, low or high from the mean power of the
+quarter) and `price` (effective €/kWh of the quarter) when they are known. The card draws the last 24 h in the thermostat and the history part of the plan chart (temperature, mode bars, prices). It is not stored in the recorder.
 
 **`price_status`**:
 

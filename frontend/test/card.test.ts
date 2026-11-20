@@ -108,13 +108,15 @@ describe("card", () => {
 
   it("shows the 24-hour history in the gauge, the plan title and the dates", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now: Date.parse("2026-11-17T10:05:00Z") });
-    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "plan", plan: plan(144), pond_history: pondHistory() }, last_updated: "z" } }));
+    const card = await mount(fakeHass({ "sensor.pond_mode": { state: "low", attributes: { reason: "plan", plan: plan(136), pond_history: pondHistory() }, last_updated: "z" } }));
     const gauge = card.shadowRoot.querySelector("phpc-gauge");
     await gauge.updateComplete;
     expect(gauge.shadowRoot.querySelector(".spark-line").getAttribute("d")).toMatch(/^M/);
     expect(card.shadowRoot.querySelector(".plan .title").textContent).toBe("Plan:");
     expect(card.shadowRoot.querySelectorAll(".chart .day-label").length).toBeGreaterThan(0);
     expect(card.shadowRoot.querySelectorAll(".chart line.grid").length).toBeGreaterThan(0);
+    const chart = card.shadowRoot.querySelector("phpc-plan-chart");
+    expect(chart.querySelectorAll(".chart rect.bar.past.high").length).toBeGreaterThan(0); // measured modes before now
   });
 
   it("shows a hairline and a tooltip under the pointer and with the keyboard", async () => {
