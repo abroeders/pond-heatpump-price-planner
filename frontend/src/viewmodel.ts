@@ -1,7 +1,8 @@
 // Turns Home Assistant state into what each section of the card shows. No DOM, unit-tested.
 
 import { resolvePlanner } from "./entities";
-import { fixed, num, power, temperature, time, withUnit } from "./format";
+import { fixed, num, numberText, power, temperature, time, withUnit } from "./format";
+import { cardLanguage } from "./localize";
 import type { CardConfig, HassEntity, HeatPumpKey, HomeAssistant, Section } from "./types";
 import { SECTIONS } from "./types";
 
@@ -107,6 +108,8 @@ export interface CardViewModel {
   switches: { cover: SwitchModel | null; control: SwitchModel | null } | null;
   model: ModelSectionModel | null;
   missingDevice: boolean;
+  /** language of texts, dates and numbers (see cardLanguage) */
+  language: string;
   /** last_updated of every entity the card reads; equal signatures mean nothing to re-render */
   signature: string;
 }
@@ -166,6 +169,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
   const hp = heatPumpEntities(hass, config, p);
   const read = [...Object.values(p), ...Object.values(hp)];
   const signature = read.map((id) => `${id}:${state(hass, id)?.last_updated ?? "-"}`).join("|");
+  const language = cardLanguage(config, state(hass, p.mode)?.attributes.language, hass.locale?.language ?? hass.language);
   const empty: CardViewModel = {
     sections,
     illustration: null,
@@ -176,6 +180,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     switches: null,
     model: null,
     missingDevice: !config.device_id || Object.keys(p).length === 0,
+    language,
     signature,
   };
   if (empty.missingDevice) return empty;
@@ -194,19 +199,19 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
   const fault = isOn(hass, hp.pump_fault);
   const flow = isOn(hass, hp.flow);
   const pumpParts = [
-    withUnit(value(hass, hp.pump_speed), speedEntity?.attributes.unit_of_measurement),
-    power(pumpPower),
+    withUnit(value(hass, hp.pump_speed), speedEntity?.attributes.unit_of_measurement, 0, language),
+    power(pumpPower, language),
   ].filter(Boolean);
   const illustration: IllustrationModel = {
-    pond: temperature(pond),
-    waterIn: temperature(value(hass, hp.water_in)),
-    waterOut: temperature(value(hass, hp.water_out)),
-    airIn: temperature(value(hass, hp.air_in)),
-    airOut: temperature(value(hass, hp.air_out)),
-    electrical: power(value(hass, hp.power)),
-    thermal: power(thermalW),
-    liquid: fixed(value(hass, hp.liquid), 0) && `${fixed(value(hass, hp.liquid), 0)} °C`,
-    gas: fixed(value(hass, hp.gas), 0) && `${fixed(value(hass, hp.gas), 0)} °C`,
+    pond: temperature(pond, language),
+    waterIn: temperature(value(hass, hp.water_in), language),
+    waterOut: temperature(value(hass, hp.water_out), language),
+    airIn: temperature(value(hass, hp.air_in), language),
+    airOut: temperature(value(hass, hp.air_out), language),
+    electrical: power(value(hass, hp.power), language),
+    thermal: power(thermalW, language),
+    liquid: fixed(value(hass, hp.liquid), 0, language) && `${fixed(value(hass, hp.liquid), 0, language)} °C`,
+    gas: fixed(value(hass, hp.gas), 0, language) && `${fixed(value(hass, hp.gas), 0, language)} °C`,
     mode: modeValue,
     fan: isOn(hass, hp.fan),
     flow,
@@ -261,27 +266,27 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
   const share = available(costEntity) ? num(costEntity.attributes.expensive_share) : null;
   const heatLoss = value(hass, p.heat_loss);
   const figures: FiguresModel = {
-    cost: available(costEntity) && num(costEntity.state) !== null ? `€ ${num(costEntity.state)!.toFixed(2)}` : null,
-    energy: withUnit(value(hass, p.planned_energy), "kWh", 1),
+    cost: available(costEntity) && num(costEntity.state) !== null ? `€ ${numberText(num(costEntity.state)!, 2, language)}` : null,
+    energy: withUnit(value(hass, p.planned_energy), "kWh", 1, language),
     expensive: share === null ? null : `${Math.round(share * 100)} %`,
-    cop: fixed(value(hass, p.cop), 1),
+    cop: fixed(value(hass, p.cop), 1, language),
     copMethod: available(copEntity) ? (copEntity.attributes.method ?? null) : null,
     heatLoss: heatLoss === null ? null : `${Math.round(heatLoss)} W/K`,
-    thermal: power(thermalW),
+    thermal: power(thermalW, language),
   };
 
   // --- switches and model -------------------------------------------------------------------------
   const sw = (key: string): SwitchModel | null => (p[key] ? { entity: p[key], on: isOn(hass, p[key]) } : null);
   const outdoor = (state(hass, p.cop)?.attributes.by_outdoor ?? {}) as Record<string, number | null>;
   const model: ModelSectionModel = {
-    cooling: withUnit(value(hass, p.cooling_coefficient), "1/h", 4),
-    heatingLow: withUnit(value(hass, p.heating_rate_low), "K/h", 3),
-    heatingHigh: withUnit(value(hass, p.heating_rate_high), "K/h", 3),
-    predictionError: withUnit(value(hass, p.prediction_error), "K", 2),
+    cooling: withUnit(value(hass, p.cooling_coefficient), "1/h", 4, language),
+    heatingLow: withUnit(value(hass, p.heating_rate_low), "K/h", 3, language),
+    heatingHigh: withUnit(value(hass, p.heating_rate_high), "K/h", 3, language),
+    predictionError: withUnit(value(hass, p.prediction_error), "K", 2, language),
     learned: available(state(hass, p.model_status))
-      ? time(state(hass, p.model_status)!.state, hass.locale?.language)
+      ? time(state(hass, p.model_status)!.state, language)
       : null,
-    copByOutdoor: Object.entries(outdoor).map(([k, v]) => [k, v === null ? null : Number(v).toFixed(1)]),
+    copByOutdoor: Object.entries(outdoor).map(([k, v]) => [k, v === null ? null : numberText(Number(v), 1, language)]),
   };
 
   const planMissing = plan ? null : available(mode) ? String(mode.attributes.reason ?? "no_plan") : "unavailable";

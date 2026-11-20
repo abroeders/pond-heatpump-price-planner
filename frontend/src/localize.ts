@@ -1,5 +1,7 @@
 // English and Dutch texts; other languages fall back to English.
 
+import type { CardConfig } from "./types";
+
 const EN: Record<string, string> = {
   pond: "pond",
   heat_pump: "HEAT PUMP",
@@ -75,6 +77,10 @@ const EN: Record<string, string> = {
   device: "Planner device",
   hours: "Width of the plan chart (hours, ending at the last known price)",
   sections: "Sections",
+  language: "Language",
+  language_auto: "Follow the integration",
+  language_en: "English",
+  language_nl: "Nederlands",
 };
 
 const NL: Record<string, string> = {
@@ -152,6 +158,10 @@ const NL: Record<string, string> = {
   device: "Planner-apparaat",
   hours: "Breedte van de plangrafiek (uren, tot de laatste bekende prijs)",
   sections: "Blokken",
+  language: "Taal",
+  language_auto: "Volg de integratie",
+  language_en: "English",
+  language_nl: "Nederlands",
 };
 
 export type Localizer = (key: string, args?: Record<string, string | number>) => string;
@@ -166,3 +176,12 @@ export function localizer(language: string | undefined): Localizer {
 }
 
 export const LANGUAGES = { en: EN, nl: NL };
+
+const FIXED = ["en", "nl"];
+
+/** The card's language: its own option, else the integration's language option, else the profile language. */
+export function cardLanguage(config: CardConfig, plannerLanguage: unknown, profile: string | undefined): string {
+  if (config.language && FIXED.includes(config.language)) return config.language;
+  if (typeof plannerLanguage === "string" && FIXED.includes(plannerLanguage)) return plannerLanguage;
+  return profile ?? "en";
+}
