@@ -110,6 +110,29 @@ describe("view model", () => {
     expect(off.illustration?.flow).toBe(false);
   });
 
+  it("follows the measured mode where fan, compressor and flow are not linked", () => {
+    const bare = { type: config.type, device_id: DEVICE };
+    const withMode = (measured: string | undefined, links: Record<string, string> = {}) => {
+      const hass = fakeHass();
+      hass.states["sensor.pond_mode"].attributes.measured_mode = measured;
+      Object.assign(hass.states["sensor.pond_model_status"].attributes.links, links);
+      return hass;
+    };
+    const running = buildViewModel(withMode("low"), bare).illustration;
+    expect(running).toMatchObject({ fan: true, compressor: true, flow: true, pump: "running" });
+    for (const measured of ["off", undefined]) {
+      expect(buildViewModel(withMode(measured), bare).illustration).toMatchObject({ fan: false, compressor: false, flow: false, pump: "off" });
+    }
+    // a configured entity wins: binary_sensor.fan is on in the fixtures, so set it off
+    const hass = withMode("high");
+    hass.states["binary_sensor.fan"] = { entity_id: "binary_sensor.fan", state: "off", attributes: {}, last_updated: "x" };
+    expect(buildViewModel(hass, { ...bare, heat_pump: { fan: "binary_sensor.fan" } }).illustration).toMatchObject({ fan: false, compressor: true });
+    // the circulation sensor linked in the integration drives the flow
+    const circ = withMode("low", { circulation: "binary_sensor.circulation" });
+    circ.states["binary_sensor.circulation"] = { entity_id: "binary_sensor.circulation", state: "off", attributes: {}, last_updated: "x" };
+    expect(buildViewModel(circ, bare).illustration).toMatchObject({ flow: false, pump: "off", fan: true });
+  });
+
   it("reports a missing device and changes its signature only when entities change", () => {
     expect(buildViewModel(fakeHass(), { type: "x" }).missingDevice).toBe(true);
     const a = buildViewModel(fakeHass(), config).signature;

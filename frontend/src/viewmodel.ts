@@ -162,6 +162,7 @@ export function heatPumpEntities(
     water_out: links.outlet_temperature,
     air_in: links.air_inlet_temperature,
     power: links.power,
+    flow: links.circulation,
   };
   const out: Partial<Record<HeatPumpKey, string>> = {};
   for (const [k, v] of Object.entries({ ...fromLinks, ...(config.heat_pump ?? {}) })) {
@@ -206,7 +207,10 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
   const speedEntity = state(hass, hp.pump_speed);
   const pumpPower = value(hass, hp.pump_power);
   const fault = isOn(hass, hp.pump_fault);
-  const flow = isOn(hass, hp.flow);
+  // without a linked entity, the drawing follows the measured mode (mean power) of the planner
+  const running = MODES.includes(mode?.attributes.measured_mode) && mode?.attributes.measured_mode !== "off";
+  const onOrRunning = (entityId: string | undefined) => (entityId ? isOn(hass, entityId) : running);
+  const flow = onOrRunning(hp.flow);
   const pumpParts = [
     withUnit(value(hass, hp.pump_speed), speedEntity?.attributes.unit_of_measurement, 0, language),
     power(pumpPower, language),
@@ -222,9 +226,9 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     liquid: fixed(value(hass, hp.liquid), 0, language) && `${fixed(value(hass, hp.liquid), 0, language)} °C`,
     gas: fixed(value(hass, hp.gas), 0, language) && `${fixed(value(hass, hp.gas), 0, language)} °C`,
     mode: modeValue,
-    fan: isOn(hass, hp.fan),
+    fan: onOrRunning(hp.fan),
     flow,
-    compressor: isOn(hass, hp.compressor),
+    compressor: onOrRunning(hp.compressor),
     pump: fault ? "fault" : flow ? "running" : "off",
     pumpText: pumpParts.length ? pumpParts.join(" · ") : null,
   };
