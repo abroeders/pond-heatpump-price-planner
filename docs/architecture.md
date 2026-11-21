@@ -866,6 +866,7 @@ classDiagram
         <<module>>
         +buildViewModel(hass, config, now) CardViewModel
         +heatPumpEntities(hass, config, planner)
+        -onOrRunning(entity) entity state, else measured_mode low or high
     }
     class entities {
         <<module>>

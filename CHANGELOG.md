@@ -7,6 +7,12 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- The heat pump drawing of the card showed a stopped heat pump when no `fan`, `compressor` or `flow` entity
+  was configured. These parts now follow the measured mode of the planner, and the water flow the circulation
+  sensor linked in the integration (#36).
+
 ## [2026.11.4] - 2026-11-20
 
 ### Added
