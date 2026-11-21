@@ -83,14 +83,18 @@ The thermostat shows a small chart of the measured pond temperature of the last 
 | Element | Shows | Moves when |
 |---|---|---|
 | Pond | pond temperature | the water surface waves gently, always |
-| Pump | speed and power; green running, red fault, grey off | – |
-| Water pipes | water in and out temperatures | dashes flow while the `flow` entity is on |
+| Pump | speed and power; green running, red fault, grey off (running follows the water flow) | – |
+| Water pipes | water in and out temperatures | dashes flow while the `flow` entity is on (see below without one) |
 | Fan | – | turns while the `fan` entity is on |
 | Compressor | – | the piston pumps while the `compressor` entity is on |
 | Refrigerant lines | hot gas (red), liquid (orange), suction gas (purple); gas and liquid temperatures | dashes flow while the compressor runs |
 | Heat exchanger | thermal power below it | – |
 | Power cord and socket | electrical power | – |
 | Air arrows | air in and out temperatures | dashes flow while the fan runs |
+
+Without a `fan`, `compressor` or `flow` entity, the drawing follows the planner: these parts run while the
+measured mode (from the mean power) is low or high. For the water flow the card first uses the circulation
+sensor linked in the integration, if there is one. A configured entity always wins.
 
 With the browser or system setting *reduce motion*, nothing moves; states stay visible as colours and
 labels. Values without an entity are left out.
@@ -128,6 +132,8 @@ heat_pump:                    # entities of the drawing, all optional
 | `sections` | all, in the order above |
 | `language` | `auto`: the [language option](configuration.md#language) of the integration, or your profile language when that is automatic. The language sets the texts, dates (`vr 21 nov`) and numbers (`€ 0,33`); times are always 24-hour |
 | `heat_pump.water_in`, `water_out`, `air_in`, `power` | the entities linked in the integration |
+| `heat_pump.flow` | the circulation sensor linked in the integration; without it, the measured mode |
+| `heat_pump.fan`, `compressor` | the measured mode of the planner (running at low or high) |
 | other `heat_pump` keys | none (left out of the drawing) |
 
 ## Troubleshooting
