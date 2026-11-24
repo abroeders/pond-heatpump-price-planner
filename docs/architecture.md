@@ -689,7 +689,7 @@ sequenceDiagram
     Note over SP: not running and a heating mode: start offset (+2)
     SP-->>Ctl: setpoint
     Ctl->>PS: preset(mode)
-    Note over PS: CapacityPreset: boost → capacity, other modes → efficient; NoPreset: None
+    Note over PS: CapacityPreset: boost → capacity, other modes → efficient<br/>NoPreset: None
     PS-->>Ctl: preset
     alt dry run, HVAC off or unavailable
         Ctl-->>Co: ApplyResult(setpoint, sent=false, reason, preset)
