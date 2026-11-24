@@ -1,7 +1,7 @@
 # Capacity preset: a boost mode for cold weather
 
 - Issue: #37
-- Status: **draft**
+- Status: **approved** (2026-11-24)
 - Date: 2026-11-24
 
 ## 1. Purpose
@@ -221,7 +221,7 @@ sequenceDiagram
 A fifth mode would combine the capacity preset with setpoint +0. It is useful only if it gives more heat
 than high at a similar or better COP. That has not been measured.
 
-Before this design is built, one test on the W'eau: about 30 minutes of `quick_heat` with setpoint +0,
+Later, when it is less cold (#38), one test on the W'eau: about 30 minutes of `quick_heat` with setpoint +0,
 outside a defrost, compared with `quiet_heat` +1 and +0. If it is useful, it becomes one more row in §3
 (preset, offset). The mode list, the classifier and the card already handle any number of modes, so the
 change stays small. The classifier would then need a power threshold between the two quick-heat levels.
@@ -261,4 +261,4 @@ change stays small. The classifier would then need a power threshold between the
 
 ## 12. Open questions
 
-- **Fifth mode:** the setpoint +0 test from §9.
+- **Fifth mode:** the setpoint +0 test from §9, tracked in #38. It does not block this design.
