@@ -9,7 +9,7 @@ export function plannerDevices(hass: HomeAssistant): string[] {
   for (const entry of Object.values(hass.entities ?? {})) {
     if (entry.platform === DOMAIN && entry.device_id) ids.add(entry.device_id);
   }
-  return [...ids].sort();
+  return [...ids].sort((a, b) => a.localeCompare(b));
 }
 
 export function resolvePlanner(hass: HomeAssistant, deviceId: string | undefined): PlannerEntities {

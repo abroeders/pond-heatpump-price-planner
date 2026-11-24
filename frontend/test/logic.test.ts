@@ -110,6 +110,41 @@ describe("view model", () => {
     expect(off.illustration?.flow).toBe(false);
   });
 
+  it("follows the measured mode where fan, compressor and flow are not linked", () => {
+    const bare = { type: config.type, device_id: DEVICE };
+    const withMode = (measured: string | undefined, links: Record<string, string> = {}) => {
+      const hass = fakeHass();
+      hass.states["sensor.pond_mode"].attributes.measured_mode = measured;
+      Object.assign(hass.states["sensor.pond_model_status"].attributes.links, links);
+      return hass;
+    };
+    const running = buildViewModel(withMode("low"), bare).illustration;
+    expect(running).toMatchObject({ fan: true, compressor: true, flow: true, pump: "running" });
+    for (const measured of ["off", undefined]) {
+      expect(buildViewModel(withMode(measured), bare).illustration).toMatchObject({ fan: false, compressor: false, flow: false, pump: "off" });
+    }
+    // a configured entity wins: binary_sensor.fan is on in the fixtures, so set it off
+    const hass = withMode("high");
+    hass.states["binary_sensor.fan"] = { entity_id: "binary_sensor.fan", state: "off", attributes: {}, last_updated: "x" };
+    expect(buildViewModel(hass, { ...bare, heat_pump: { fan: "binary_sensor.fan" } }).illustration).toMatchObject({ fan: false, compressor: true });
+    // the circulation sensor linked in the integration drives the flow
+    const circ = withMode("low", { circulation: "binary_sensor.circulation" });
+    circ.states["binary_sensor.circulation"] = { entity_id: "binary_sensor.circulation", state: "off", attributes: {}, last_updated: "x" };
+    expect(buildViewModel(circ, bare).illustration).toMatchObject({ flow: false, pump: "off", fan: true });
+  });
+
+  it("shows boost: running in the drawing and its heating rate in the model", () => {
+    const hass = fakeHass({ "sensor.pond_heating_rate_boost": { state: "0.288", attributes: {}, last_updated: "x" } });
+    hass.states["sensor.pond_mode"].attributes.measured_mode = "boost";
+    hass.entities["sensor.pond_heating_rate_boost"] = {
+      entity_id: "sensor.pond_heating_rate_boost", device_id: DEVICE, platform: "pond_heatpump_price_planner", translation_key: "heating_rate_boost",
+    };
+    const vm = buildViewModel(hass, { type: config.type, device_id: DEVICE });
+    expect(vm.illustration).toMatchObject({ fan: true, compressor: true });
+    expect(vm.model!.heatingBoost).toBe("0.288 K/h");
+    expect(buildViewModel(fakeHass(), config).model!.heatingBoost).toBeNull();
+  });
+
   it("reports a missing device and changes its signature only when entities change", () => {
     expect(buildViewModel(fakeHass(), { type: "x" }).missingDevice).toBe(true);
     const a = buildViewModel(fakeHass(), config).signature;
@@ -239,6 +274,18 @@ describe("chart window, measured line and hover", () => {
     const lines = tooltipLines(past, localizer("en"), "en");
     expect(lines).toContain("€ 0.500/kWh");
     expect(lines).toContain("expensive quarter");
+  });
+
+  it("reads boost in the plan and the history, with its own legend entry", () => {
+    const boosted = planAttr(8).map((q, i) => ({ ...q, mode: i < 2 ? "boost" : q.mode }));
+    const hass = fakeHass({ "sensor.pond_mode": { state: "boost", attributes: { plan: boosted }, last_updated: "x" } });
+    const vm = buildViewModel(hass, config, NOW);
+    expect(vm.plan!.quarters.slice(0, 2).map((q) => q.mode)).toEqual(["boost", "boost"]);
+    expect(legendItems(vm.plan!).map((i) => i.key)).toContain("boost");
+    const plain = buildViewModel(fakeHass(), config, NOW);
+    expect(legendItems(plain.plan!).map((i) => i.key)).not.toContain("boost");
+    plain.plan!.history = plain.plan!.history.map((p) => ({ ...p, mode: "boost" }));
+    expect(legendItems(plain.plan!).map((i) => i.key)).toContain("boost"); // measured boost only
   });
 
   it("uses 24-hour times in tooltip lines", () => {

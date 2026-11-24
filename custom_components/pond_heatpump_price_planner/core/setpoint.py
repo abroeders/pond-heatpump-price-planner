@@ -10,8 +10,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Protocol
 
-DEFAULT_OFFSETS = {"off": -2, "low": 0, "high": 1, "start": 2}
-HEATING = ("low", "high")
+DEFAULT_OFFSETS = {"off": -2, "low": 0, "high": 1, "boost": 1, "start": 2}
+HEATING = ("low", "high", "boost")
 
 
 class SetpointStrategy(Protocol):
@@ -37,7 +37,8 @@ class OffsetSetpoint:
     """Setpoint = rounded inlet temperature (or pond temperature) + offset of the mode, within the limits.
 
     A stopped heat pump does not start on the low (or high) setpoint: it needs a higher one. While it is not
-    running, low and high use the start offset (at least the mode's offset); once it runs, the mode's offset.
+    running, the heating modes use the start offset (at least the mode's offset); once it runs, the mode's
+    offset.
     """
 
     offsets: Mapping[str, float] = field(default_factory=lambda: dict(DEFAULT_OFFSETS))

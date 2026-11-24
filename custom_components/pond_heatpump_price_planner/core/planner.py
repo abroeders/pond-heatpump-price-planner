@@ -1,8 +1,9 @@
-"""Cost-optimal schedule of off/low/high per quarter hour (dynamic programming).
+"""Cost-optimal schedule of off/low/high/boost per quarter hour (dynamic programming).
 
-State: pond temperature on a grid and the previous mode. Costs: energy, a penalty per start and a soft
-penalty for leaving the inner band. The heat left in the pond at the horizon has a value, so the plan does
-not empty the buffer just before the end. See docs/design/2026-11-17-planner.md.
+State: pond temperature on a grid and the previous mode. Costs: energy, a penalty per start, a penalty per
+preset change (into or out of boost) and a soft penalty for leaving the inner band. The heat left in the pond
+at the horizon has a value, so the plan does not empty the buffer just before the end.
+See docs/design/2026-11-17-planner.md and docs/design/2026-11-24-capacity-preset.md.
 """
 
 from __future__ import annotations
@@ -39,6 +40,15 @@ class PlanRequest:
     cover: bool = False
     start_penalty: float = 0.05
     allow_high: bool = True
+    allow_boost: bool = False
+    preset_penalty: float = 0.05
+
+    def allowed(self, mode: str) -> bool:
+        if mode == "high":
+            return self.allow_high
+        if mode == "boost":
+            return self.allow_high and self.allow_boost
+        return True
 
     @property
     def quarters(self) -> int:
@@ -78,7 +88,7 @@ class DynamicProgrammingPlanner:
         if n == 0:
             raise ValueError("no quarters to plan")
         p = request.params
-        modes = [m for m in range(len(MODES)) if request.allow_high or MODES[m] != "high"]
+        modes = [m for m in range(len(MODES)) if request.allowed(MODES[m])]
         grid = self._grid(request)
         cost = request.costs.matrix(p, planning=True)[:n]
         real_cost = request.costs.matrix(p)[:n]
@@ -104,6 +114,7 @@ class DynamicProgrammingPlanner:
                     total = (
                         cost[t, m]
                         + (request.start_penalty if starting else 0.0)
+                        + (request.preset_penalty if _preset_change(MODES[prev], MODES[m]) else 0.0)
                         + self._penalty(t_next, lo, hi)
                         + _interp_uniform(t_next, grid[0], value[m])
                     )
@@ -140,6 +151,11 @@ class DynamicProgrammingPlanner:
             quarter_costs.append(float(cost[t, m]))
             prev = m
         return summarize(request, modes, temps, quarter_costs)
+
+
+def _preset_change(prev: str, mode: str) -> bool:
+    """Whether going from prev to mode changes the preset while running: into or out of boost."""
+    return "off" not in (prev, mode) and (prev == "boost") != (mode == "boost")
 
 
 def _interp_uniform(x: np.ndarray, x0: float, values: np.ndarray) -> np.ndarray:

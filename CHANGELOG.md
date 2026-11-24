@@ -7,6 +7,31 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.5] - 2026-11-24
+
+### Added
+
+- Boost mode for cold weather: with an efficient and a capacity preset set in the options (for example
+  `quiet_heat` and `quick_heat`), the planner can choose a fourth mode, boost, per quarter. The integration
+  switches the heat pump's preset itself, only when it changes, and back to the efficient preset when
+  control is turned off. Each quarter sample stores the preset, so boost learns its own power and heating
+  rate and high is no longer mixed with capacity-preset data; older quarters get their preset from the
+  recorder once. New options `preset_efficient`, `preset_capacity` and `offset_boost`, a `preset` attribute
+  on the mode sensor, a *Heating rate boost* sensor, and red boost bars in the card (#37).
+
+### Fixed
+
+- The heat pump drawing of the card showed a stopped heat pump when no `fan`, `compressor` or `flow` entity
+  was configured. These parts now follow the measured mode of the planner, and the water flow the circulation
+  sensor linked in the integration (#36).
+- A failed service call from the card (thermostat, band, switches) is logged in the browser console instead of
+  ending as an unhandled error (#39).
+
+### Changed
+
+- CI: pinned dependencies and action versions, Dependabot updates, and the Home Assistant tests run on both the
+  minimum supported version and the latest release (#39).
+
 ## [2026.11.4] - 2026-11-20
 
 ### Added
@@ -162,7 +187,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.5...HEAD
+[2026.11.5]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...v2026.11.5
 [2026.11.4]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.3...v2026.11.4
 [2026.11.3]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...v2026.11.3
 [2026.11.2]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.1...v2026.11.2

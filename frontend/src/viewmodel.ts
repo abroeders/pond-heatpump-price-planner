@@ -6,7 +6,7 @@ import { cardLanguage } from "./localize";
 import type { CardConfig, HassEntity, HeatPumpKey, HomeAssistant, Section } from "./types";
 import { SECTIONS } from "./types";
 
-export type Mode = "off" | "low" | "high";
+export type Mode = "off" | "low" | "high" | "boost";
 export type PumpState = "running" | "fault" | "off";
 
 export interface IllustrationModel {
@@ -96,6 +96,7 @@ export interface ModelSectionModel {
   cooling: string | null;
   heatingLow: string | null;
   heatingHigh: string | null;
+  heatingBoost: string | null;
   predictionError: string | null;
   learned: string | null;
   copByOutdoor: [string, string | null][];
@@ -118,7 +119,7 @@ export interface CardViewModel {
   signature: string;
 }
 
-const MODES: Mode[] = ["off", "low", "high"];
+const MODES: Mode[] = ["off", "low", "high", "boost"];
 
 function pondHistory(raw: unknown): HistoryPoint[] {
   if (!Array.isArray(raw)) return [];
@@ -162,6 +163,7 @@ export function heatPumpEntities(
     water_out: links.outlet_temperature,
     air_in: links.air_inlet_temperature,
     power: links.power,
+    flow: links.circulation,
   };
   const out: Partial<Record<HeatPumpKey, string>> = {};
   for (const [k, v] of Object.entries({ ...fromLinks, ...(config.heat_pump ?? {}) })) {
@@ -206,7 +208,10 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
   const speedEntity = state(hass, hp.pump_speed);
   const pumpPower = value(hass, hp.pump_power);
   const fault = isOn(hass, hp.pump_fault);
-  const flow = isOn(hass, hp.flow);
+  // without a linked entity, the drawing follows the measured mode (mean power) of the planner
+  const running = MODES.includes(mode?.attributes.measured_mode) && mode?.attributes.measured_mode !== "off";
+  const onOrRunning = (entityId: string | undefined) => (entityId ? isOn(hass, entityId) : running);
+  const flow = onOrRunning(hp.flow);
   const pumpParts = [
     withUnit(value(hass, hp.pump_speed), speedEntity?.attributes.unit_of_measurement, 0, language),
     power(pumpPower, language),
@@ -222,9 +227,9 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     liquid: fixed(value(hass, hp.liquid), 0, language) && `${fixed(value(hass, hp.liquid), 0, language)} °C`,
     gas: fixed(value(hass, hp.gas), 0, language) && `${fixed(value(hass, hp.gas), 0, language)} °C`,
     mode: modeValue,
-    fan: isOn(hass, hp.fan),
+    fan: onOrRunning(hp.fan),
     flow,
-    compressor: isOn(hass, hp.compressor),
+    compressor: onOrRunning(hp.compressor),
     pump: fault ? "fault" : flow ? "running" : "off",
     pumpText: pumpParts.length ? pumpParts.join(" · ") : null,
   };
@@ -291,6 +296,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     cooling: withUnit(value(hass, p.cooling_coefficient), "1/h", 4, language),
     heatingLow: withUnit(value(hass, p.heating_rate_low), "K/h", 3, language),
     heatingHigh: withUnit(value(hass, p.heating_rate_high), "K/h", 3, language),
+    heatingBoost: withUnit(value(hass, p.heating_rate_boost), "K/h", 3, language),
     predictionError: withUnit(value(hass, p.prediction_error), "K", 2, language),
     learned: available(state(hass, p.model_status))
       ? time(state(hass, p.model_status)!.state, language)

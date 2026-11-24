@@ -9,34 +9,43 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.13"
-      - run: pip install numpy pytest ruff
+      - run: "pip install --only-binary :all: -r requirements/test.txt"
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest
 
   home-assistant:
+    name: home-assistant (${{ matrix.ha }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ha: [ha-min, ha-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.13"
-      - run: pip install pytest-homeassistant-custom-component numpy
+          python-version: "3.14"
+      # Home Assistant depends on packages that are only published as sdists, so --only-binary is not possible.
+      - run: pip install -r requirements/${{ matrix.ha }}.txt
+      - run: python -c "from homeassistant.const import __version__; print('Home Assistant', __version__)"
       - run: pytest tests_ha -p no:cacheprovider -o pythonpath=. -o testpaths=tests_ha -o asyncio_mode=auto
 
   diagrams:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
-      - run: npm install --no-save mermaid@11 jsdom@24
-      - run: node scripts/check_mermaid.mjs docs/*.md docs/design/*.md
+          cache: npm
+          cache-dependency-path: scripts/mermaid/package-lock.json
+      - run: npm ci --ignore-scripts --prefix scripts/mermaid
+      - run: node scripts/mermaid/check_mermaid.mjs docs/*.md docs/design/*.md
 
   card:
     runs-on: ubuntu-latest
@@ -44,13 +53,13 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
       - run: npm run check:size

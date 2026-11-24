@@ -44,6 +44,7 @@ export function modelSection(m: ModelSectionModel, t: Localizer): TemplateResult
     [t("cooling"), m.cooling],
     [t("heating_low"), m.heatingLow],
     [t("heating_high"), m.heatingHigh],
+    [t("heating_boost"), m.heatingBoost],
     [t("prediction_error"), m.predictionError],
     [t("learned"), m.learned],
   ];

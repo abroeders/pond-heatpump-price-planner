@@ -124,7 +124,7 @@ export const illustrationStyles = css`
   .warmtext { fill: #e65100; }
   .pond-temp { font-size: 22px; font-weight: 700; fill: #0d47a1; }
   .housing { fill: var(--secondary-background-color, #eceff1); stroke: #90a4ae; stroke-width: 2; }
-  .badge { fill: #9e9e9e; } .badge.low { fill: #1e88e5; } .badge.high { fill: #ef6c00; }
+  .badge { fill: #9e9e9e; } .badge.low { fill: #1e88e5; } .badge.high { fill: #ef6c00; } .badge.boost { fill: #c62828; }
   .badge-text { font-size: 12px; font-weight: 700; fill: #fff; }
   .arrow { fill: #b0bec5; } .warm-arrow { fill: #ff8a65; }
   .air path { fill: none; stroke: #b0bec5; stroke-width: 2; stroke-dasharray: 6 6; }

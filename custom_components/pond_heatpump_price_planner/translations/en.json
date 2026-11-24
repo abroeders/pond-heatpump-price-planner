@@ -104,6 +104,7 @@
           "offset_off": "Setpoint offset off",
           "offset_low": "Setpoint offset low",
           "offset_high": "Setpoint offset high",
+          "offset_boost": "Setpoint offset boost",
           "offset_start": "Setpoint offset to start",
           "low_w": "Power threshold off/low",
           "high_w": "Power threshold low/high",
@@ -112,7 +113,9 @@
           "settle_minutes": "COP: settle time after a start",
           "cop_inlet": "COP: inlet temperature",
           "cop_outlet_correction": "COP: outlet correction (manual)",
-          "language": "Language"
+          "language": "Language",
+          "preset_efficient": "Efficient preset",
+          "preset_capacity": "Capacity preset (boost)"
         },
         "data_description": {
           "price_multiplier": "Effective price = price × multiplier + addition. For a bare exchange price in the Netherlands: 1.21 and about 0.136.",
@@ -121,12 +124,18 @@
           "margin": "The plan stays this far inside the band to absorb prediction errors.",
           "surcharge_auto": "Every night the last 14 days are replayed and the surcharge with the lowest real cost is chosen.",
           "offset_low": "Setpoint = rounded inlet temperature + offset of the mode.",
-          "offset_start": "Used for low and high while the heat pump is not running: a stopped heat pump often needs a higher setpoint to start. Back to the mode's offset as soon as the power reaches the off/low threshold.",
+          "offset_start": "Used for the heating modes while the heat pump is not running: a stopped heat pump often needs a higher setpoint to start. Back to the mode's offset as soon as the power reaches the off/low threshold.",
+          "offset_boost": "Setpoint offset of the boost mode (on the capacity preset).",
           "cop_inlet": "Inlet of the flow method. The pond sensor is more precise when the heat pump reports whole degrees.",
           "cop_outlet_correction": "Added to the outlet temperature. Leave empty to learn it while the heat pump is off and water flows (the outlet should then read the pond temperature).",
-          "language": "Language of the entity names, the explanatory attributes and the card. Automatic follows Home Assistant. Screens drawn by Home Assistant itself stay in your profile language."
+          "language": "Language of the entity names, the explanatory attributes and the card. Automatic follows Home Assistant. Screens drawn by Home Assistant itself stay in your profile language.",
+          "preset_efficient": "Preset of the heat pump for off, low and high. Leave both presets empty to never change the preset.",
+          "preset_capacity": "Preset with more power and a lower COP, used in the boost mode when high is not enough to keep the pond in its band."
         }
       }
+    },
+    "error": {
+      "presets_incomplete": "Choose both presets, and two different ones, or leave both empty."
     }
   },
   "selector": {
@@ -176,7 +185,8 @@
         "state": {
           "off": "Off",
           "low": "Low",
-          "high": "High"
+          "high": "High",
+          "boost": "Boost"
         },
         "state_attributes": {
           "reason": {
@@ -250,6 +260,9 @@
       },
       "heating_rate_high": {
         "name": "Heating rate high"
+      },
+      "heating_rate_boost": {
+        "name": "Heating rate boost"
       },
       "prediction_error": {
         "name": "Prediction error"

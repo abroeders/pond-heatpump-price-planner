@@ -86,6 +86,7 @@ The integration is split in two layers:
 | **Strategy** + **Chain of responsibility** | `AttributeParser` implementations (`DictListParser`, `PlainListParser`) tried in turn by `parse_intervals` | a new price format is a new parser; the planner never sees attribute formats |
 | Open/closed + **Strategy** | `Planner` protocol, `DynamicProgrammingPlanner` | another optimiser can replace it without touching callers (the tuning takes any `Planner`) |
 | **Strategy** | `SetpointStrategy` protocol, `OffsetSetpoint` | another heat pump can be controlled differently without touching the controller |
+| **Strategy** + **Null object** | `PresetStrategy` protocol, `CapacityPreset`, `NoPreset` | the preset per mode is a separate decision; without presets the controller needs no special case |
 | Single responsibility | `SafetyGuard` decides, `OffsetSetpoint` translates, `HeatPumpController` sends and watches | decisions are tested without Home Assistant |
 | Separation of cost and optimisation | `EnergyCosts` computes € per quarter and mode (solar surplus, feed-in, surcharge); the planner only minimises | solar, feed-in and surcharge change no planner code |
 
@@ -102,6 +103,8 @@ classDiagram
         +Optional~float~ outdoor
         +Optional~float~ power
         +bool cover
+        +Optional~float~ price
+        +Optional~str~ preset
         +to_list() list
         +from_list(row)$ Sample
     }
@@ -117,6 +120,7 @@ classDiagram
         +Optional~float~ k_cover
         +float offset
         +float start_factor
+        +list fitted
         +k(cover) float
         +rate(mode) float
         +step(temp, mode, t_out, starting, cover) float
@@ -127,7 +131,8 @@ classDiagram
     class ModeClassifier {
         +float low_w
         +float high_w
-        +mode(power_w) Optional~str~
+        +Optional~str~ capacity_preset
+        +mode(power_w, preset) Optional~str~
     }
     class Hour {
         +float t
@@ -135,11 +140,13 @@ classDiagram
         +float outdoor
         +float p_low
         +float p_high
+        +float p_boost
         +bool cover
         +int local_hour
         +Optional~float~ slope
         +float w_low
         +float w_high
+        +float w_boost
         +float w_delta
         +is_night bool
     }
@@ -188,9 +195,11 @@ classDiagram
     class HistorySource {
         <<interface>>
         +series(entity_ids, start, end) dict
+        +attribute(entity_id, attribute, start, end) list
     }
     class RecorderHistory {
         +series(entity_ids, start, end) dict
+        +attribute(entity_id, attribute, start, end) list
     }
     class PlannerStore {
         +list~Sample~ samples
@@ -215,8 +224,13 @@ classDiagram
     PlannerStore o-- "1" ModelParams
 ```
 
-Module functions: `samples.to_quarters`, `prune`, `merge` (built on `PowerIntegrator`); `learning.hourly`;
-`seeding.seed` (uses a `HistorySource`); `history.async_seed_store` (runs `seed` in the recorder executor).
+Module functions: `samples.to_quarters`, `fill_presets`, `prune`, `merge` (built on `PowerIntegrator`);
+`learning.hourly`; `seeding.seed` and `seeding.backfill_presets` (use a `HistorySource`);
+`history.async_seed_store` and `history.async_backfill_presets` (run them in the recorder executor).
+
+The mode of a sample comes from its power and its preset: below `low_w` off, below `high_w` low, otherwise
+boost on the capacity preset and high on any other (or an unknown) preset. Boost gets its own gain and
+power; until it has been fitted, its gain is 0.9 × the gain of high (#37).
 
 ### 3.2 Model step
 
@@ -246,11 +260,20 @@ sequenceDiagram
         Hist->>Rec: get_significant_states(...)
         Rec-->>Hist: states
         Hist-->>Seed: (epoch, value) lists
+        Seed->>Hist: attribute(climate, preset_mode, now − 42 d, now)
+        Hist-->>Seed: (epoch, preset) changes
         Seed->>Seed: to_quarters, merge (existing win), prune
         Seed-->>Fn: SeedResult(samples, added)
         Fn->>Store: replace_samples(samples) → delayed save
     else enough samples
         Fn-->>Setup: 0
+    end
+    Setup->>Fn: async_backfill_presets(hass, store, climate, now)
+    opt not done before
+        Fn->>Seed: backfill_presets(samples, RecorderHistory, climate, now)
+        Seed->>Hist: attribute(climate, preset_mode, first sample without preset, now)
+        Seed->>Seed: fill_presets (samples older than the history stay without a preset)
+        Fn->>Store: extra.presets_backfilled = true → delayed save
     end
 ```
 
@@ -283,10 +306,10 @@ The timer and the wiring to the entities are added with the coordinator (#4, #5)
 
 ```mermaid
 flowchart LR
-    Q[quarter samples] --> H[hourly means:<br/>pond, outdoor,<br/>p_low, p_high]
+    Q[quarter samples] --> H[hourly means:<br/>pond, outdoor,<br/>p_low, p_high, p_boost]
     H --> W["window h−2 … h+2<br/>weights ⅛ ¼ ¼ ¼ ⅛"]
     W --> SL["slope = (T[h+2] − T[h−2]) / 4 h"]
-    W --> RG[w_low, w_high, w_delta]
+    W --> RG[w_low, w_high, w_boost, w_delta]
     SL & RG --> FIT[least squares]
 ```
 
@@ -351,7 +374,10 @@ classDiagram
         +bool cover
         +float start_penalty
         +bool allow_high
+        +bool allow_boost
+        +float preset_penalty
         +quarters int
+        +allowed(mode) bool
     }
     class Plan {
         +list modes
@@ -422,7 +448,7 @@ sequenceDiagram
 flowchart TB
     T["for t = N−1 … 0"] --> P["for previous mode p, next mode m"]
     P --> S["T′ = step(grid, m, outdoor[t], starting = p off and m on)"]
-    S --> C["cost = energy[t, m] (+ surcharge) + start penalty + band penalty(T′) + V[t+1, m](T′)"]
+    S --> C["cost = energy[t, m] (+ surcharge) + start penalty + preset penalty (boost ↔ low/high) + band penalty(T′) + V[t+1, m](T′)"]
     C --> M["V[t, p] = min over m; policy[t, p] = argmin"]
     M --> T
     V0["V[N] = −(T − target) · heat value"] --> T
@@ -565,7 +591,7 @@ classDiagram
     class SafetyGuard {
         +SafetySettings settings
         -set _active
-        +decide(plan_mode, pond, pond_age, target, band, allow_high, previous) Decision
+        +decide(plan_mode, pond, pond_age, target, band, allow_high, allow_boost, previous) Decision
     }
     class SafetySettings {
         +float far_below
@@ -581,8 +607,20 @@ classDiagram
         +setpoint(mode, inlet, pond, min_temp, max_temp, step, running) float
     }
     class OffsetSetpoint {
-        +dict offsets  off, low, high, start
+        +dict offsets  off, low, high, boost, start
         +setpoint(mode, inlet, pond, min_temp, max_temp, step, running) float
+    }
+    class PresetStrategy {
+        <<interface>>
+        +preset(mode) Optional~str~
+    }
+    class CapacityPreset {
+        +str efficient
+        +str capacity
+        +preset(mode) str
+    }
+    class NoPreset {
+        +preset(mode) None
     }
     class MismatchTracker {
         +float grace
@@ -594,17 +632,23 @@ classDiagram
         +str climate_entity
         +setpoint_for(decision, inlet, pond, running) Optional~float~
         +async_apply(decision, inlet, pond, control, now, running) ApplyResult
+        +async_set_preset(preset) bool
+        +async_release()
         +check_following(measured_mode, now) bool
     }
     class ApplyResult {
         +Optional~float~ setpoint
         +bool sent
         +str reason
+        +Optional~str~ preset
     }
     SafetyGuard o-- SafetySettings
     SafetyGuard ..> Decision : returns
     SetpointStrategy <|.. OffsetSetpoint
+    PresetStrategy <|.. CapacityPreset
+    PresetStrategy <|.. NoPreset
     HeatPumpController o-- SetpointStrategy
+    HeatPumpController o-- PresetStrategy
     HeatPumpController o-- MismatchTracker
     HeatPumpController ..> ApplyResult : returns
     HeatPumpController ..> Decision : applies
@@ -635,19 +679,28 @@ sequenceDiagram
     participant Guard as SafetyGuard
     participant Ctl as HeatPumpController
     participant SP as OffsetSetpoint
+    participant PS as PresetStrategy
     participant HP as climate entity
     participant IR as issue registry
     Co->>Guard: decide(plan mode, pond, ...)
     Guard-->>Co: Decision
     Co->>Ctl: async_apply(decision, inlet, pond, control, now, running)
     Ctl->>SP: setpoint(mode, inlet, pond, min, max, step, running)
-    Note over SP: not running and low/high: start offset (+2)
+    Note over SP: not running and a heating mode: start offset (+2)
     SP-->>Ctl: setpoint
+    Ctl->>PS: preset(mode)
+    Note over PS: CapacityPreset: boost → capacity, other modes → efficient<br/>NoPreset: None
+    PS-->>Ctl: preset
     alt dry run, HVAC off or unavailable
-        Ctl-->>Co: ApplyResult(setpoint, sent=false, reason)
-    else setpoint differs
-        Ctl->>HP: climate.set_temperature
-        Ctl-->>Co: ApplyResult(setpoint, sent=true)
+        Ctl-->>Co: ApplyResult(setpoint, sent=false, reason, preset)
+    else
+        opt preset differs and the heat pump offers it
+            Ctl->>HP: climate.set_preset_mode
+        end
+        opt setpoint differs
+            Ctl->>HP: climate.set_temperature
+        end
+        Ctl-->>Co: ApplyResult(setpoint, sent, reason, preset)
     end
     Co->>Ctl: check_following(measured mode, now)
     opt no follow for 2 h
@@ -660,7 +713,7 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Stopped
-    Stopped --> Starting: decision low or high
+    Stopped --> Starting: decision low, high or boost
     Starting --> Running: power ≥ low_w (re-apply at once)
     Starting --> Starting: not started (repair after 2 h, as any mismatch)
     Running --> Stopped: decision off
@@ -669,7 +722,7 @@ stateDiagram-v2
         setpoint = inlet + offset_start (+2)
     end note
     note right of Running
-        setpoint = inlet + offset of the mode (low 0, high +1)
+        setpoint = inlet + offset of the mode (low 0, high +1, boost +1)
     end note
 ```
 
@@ -685,6 +738,7 @@ classDiagram
     class PlannerCoordinator {
         +PlannerStore store
         +InputReader inputs
+        +PresetStrategy presets
         +DynamicProgrammingPlanner planner
         +Learner learner
         +SafetyGuard guard
@@ -699,6 +753,8 @@ classDiagram
         +async_replan()
         +async_learn()
         +async_set_setting(key, value)
+        +boost bool
+        +preset() Optional~str~
     }
     class PlannerData {
         +Plan plan
@@ -773,7 +829,7 @@ sequenceDiagram
     Init->>Co: PlannerCoordinator(hass, entry)
     Init->>Co: async_start()
     Co->>Store: async_load()
-    Co->>Co: seed from the recorder if needed
+    Co->>Co: seed from the recorder if needed, fill missing presets once
     Co->>Co: state listeners and timers (quarter, hour, 03:30)
     Co->>Co: COP, first plan
     alt start fails
@@ -799,7 +855,7 @@ sequenceDiagram
     participant C as HeatPumpController
     participant E as entities
     T->>Co: _on_quarter
-    Co->>St: add(sample of the past quarter, with price)
+    Co->>St: add(sample of the past quarter, with price and preset)
     Co->>Co: tracker.observe(pond)
     Co->>In: prices, outdoor forecast, surplus
     Co->>P: make_plan(PlanRequest)
@@ -822,6 +878,9 @@ sequenceDiagram
     U->>N: set value
     N->>Co: async_set_setting(key, value)
     Co->>St: set_setting (saved after 60 s)
+    opt control turned off
+        Co->>Co: controller.async_release() (efficient preset)
+    end
     alt target (thermostat), band, cover or control
         Co->>Co: schedule_replan (2 s debounce)
     end
@@ -866,6 +925,7 @@ classDiagram
         <<module>>
         +buildViewModel(hass, config, now) CardViewModel
         +heatPumpEntities(hass, config, planner)
+        -onOrRunning(entity) entity state, else measured_mode low, high or boost
     }
     class entities {
         <<module>>

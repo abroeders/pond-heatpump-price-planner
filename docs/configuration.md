@@ -72,7 +72,8 @@ A solar forecast sensor is read from a `forecast` list with `w` (W) per entry, o
 | `offset_off` | −2 K | −5–5 K | setpoint offset from the inlet temperature for off | must switch the compressor off |
 | `offset_low` | 0 K | −5–5 K | offset for low | must give the lowest stable power |
 | `offset_high` | +1 K | −5–5 K | offset for high | must give full power |
-| `offset_start` | +2 K | −5–5 K | offset for low and high while the heat pump is not running (power below `low_w`) | must start a stopped heat pump; once it runs, the mode's offset is sent at once |
+| `offset_boost` | +1 K | −5–5 K | offset for boost (on the capacity preset) | only used with both presets set; see [Boost](#boost-capacity-preset) |
+| `offset_start` | +2 K | −5–5 K | offset for the heating modes while the heat pump is not running (power below `low_w`) | must start a stopped heat pump; once it runs, the mode's offset is sent at once |
 | `low_w` | 150 W | 0–5000 W | below this power the heat pump counts as off | used for learning and COP |
 | `high_w` | 650 W | 0–10000 W | from this power the heat pump counts as high | used for learning and COP; set between your low and high power |
 | `cop_window` | 14 d | 7–42 d | window of the COP sensors | shorter: follows changes faster, more noise |
@@ -81,6 +82,8 @@ A solar forecast sensor is read from a `forecast` list with `w` (W) per entry, o
 | `cop_inlet` | heat pump inlet | heat pump inlet, pond temperature sensor | inlet temperature of the flow COP | the pond sensor is more precise when the heat pump reports whole degrees, see [COP](cop.md#calibrating-whole-degree-sensors) |
 | `cop_outlet_correction` | empty | −2–2 K | added to the outlet temperature of the flow COP | empty: learned while the heat pump is off and water flows |
 | `language` | automatic | automatic, English, Nederlands | language of the entity names, the explanatory attributes (`reason_text` and friends) and the card | see below |
+| `preset_efficient` | empty | the heat pump's presets | preset for off, low and high | empty (both): the planner never changes the preset; see [Boost](#boost-capacity-preset) |
+| `preset_capacity` | empty | the heat pump's presets | preset for boost: more power, lower COP | set both presets, and two different ones, to enable boost |
 
 Saving the options restarts the planner. The learned model and the stored data are kept.
 
@@ -99,6 +102,29 @@ Dutch pond planner in an English Home Assistant:
 
 Screens that Home Assistant draws itself stay in your profile language: this options form, the setup and
 repair dialogs, and the translated states and attributes in the entity dialog.
+
+### Boost (capacity preset)
+
+Some heat pumps have an efficient and a capacity preset, such as `quiet_heat` and `quick_heat` on a W'eau.
+On the efficient preset, high may not be enough to keep the pond in its band in cold weather.
+
+With `preset_efficient` and `preset_capacity` set, the planner gets a fourth mode, **boost**: the capacity
+preset with the setpoint offset `offset_boost`.
+- **When:** the planner picks boost per quarter when it is cheaper than falling below the band. That is
+  mostly when high cannot keep up. A penalty per change between boost and low or high (the same amount as
+  `start_penalty`) keeps it from switching back and forth.
+- **Preset:** the integration sets the capacity preset for boost and the efficient preset for every other
+  mode, only when it changes. With *control the heat pump* off, nothing is sent; turning control off sets
+  the efficient preset once.
+- **Learning:** each quarter stores the preset, so boost gets its own power and heating rate, and high stays
+  pure. Until boost has been learned, its heating gain is 0.9 × that of high. On the first start after an
+  update, the preset of older quarters is read from the recorder (10 days by default).
+- **Without presets:** the planner never changes the preset. If you switch it by hand, the learning counts
+  the quarters on either preset as high.
+- **`allow_high` off:** disables boost too.
+
+Measured on a W'eau: a setpoint further above the inlet (+2, +3) gives no more power than +1 on either preset;
+only the preset changes the capacity.
 
 ### Finding the setpoint offsets for another heat pump
 

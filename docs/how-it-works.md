@@ -17,10 +17,14 @@ the first quarter. Safety rules check every decision before it reaches the heat 
   efficient. The planner optimises on real cost.
 - **It learns your pond.** Every night it updates how fast the pond warms and cools. An insulation cover in
   winter shows up within a week, even without telling it.
+- **Boost for cold weather.** With an efficient and a capacity preset configured, a fourth mode, boost,
+  runs the heat pump on its capacity preset. The planner uses it when high cannot keep the pond in its
+  band; the integration switches the preset itself
+  ([configuration](configuration.md#boost-capacity-preset)).
 
 ## 2. The thermal model
 
-Per quarter hour ($\Delta t$ = 0.25 h), with mode $m \in \{\text{off}, \text{low}, \text{high}\}$:
+Per quarter hour ($\Delta t$ = 0.25 h), with mode $m \in \{\text{off}, \text{low}, \text{high}, \text{boost}\}$:
 
 $$
 T_{t+1} = T_t + \Delta t \cdot \Big( g_m \cdot s \cdot P_m \;-\; k \cdot (T_t - T_{out,t}) \;+\; c \Big)
@@ -56,7 +60,7 @@ the middle hour would underestimate the gains by about 30 %.
 
 | Fit | Window | What | How |
 |---|---|---|---|
-| Slow fit | 28 days | $g_{low}$, $g_{high}$, $c$, mode powers | least squares; results outside sanity bounds are rejected; new values move 30 % towards the fit |
+| Slow fit | 28 days | $g_{low}$, $g_{high}$, $g_{boost}$, $c$, mode powers | least squares; results outside sanity bounds are rejected; new values move 30 % towards the fit; a mode with fewer than 20 hours keeps its value ($g_{boost}$: 0.9 × $g_{high}$ until learned) |
 | Cooling fit | 7 days, night hours 19–07 | $k$ for the current cover state | weighted least squares, half-life 3 days, gains fixed |
 
 On the reference data the cooling estimate varies by about 15 % from day to day. A cover that lowers the
@@ -119,7 +123,7 @@ Before the plan reaches the heat pump, these rules apply in order:
 | Situation | Mode |
 |---|---|
 | no pond temperature for 30 min | low |
-| more than 0.3 K below the band | high (low if high is not allowed) |
+| more than 0.3 K below the band | boost when configured, otherwise high (low if high is not allowed) |
 | below the band | at least low |
 | above the band | off |
 | no plan | simple thermostat |
@@ -133,8 +137,9 @@ $$
 \text{setpoint} = \text{round}(T_{inlet}) + \text{offset}_m
 $$
 
-The defaults are off −2 K, low 0 K, high +1 K. The setpoint is only sent when it changes, and again when the
-inlet temperature changes.
+The defaults are off −2 K, low 0 K, high +1 K, boost +1 K. The setpoint is only sent when it changes, and
+again when the inlet temperature changes. With presets configured, the preset of the mode is sent first, also
+only when it changes.
 
 **Checks.**
 - If the heat pump does not follow within 30 minutes, the mode sensor shows `mismatch`. After two hours a

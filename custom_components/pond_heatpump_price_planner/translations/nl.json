@@ -104,6 +104,7 @@
           "offset_off": "Setpoint-offset uit",
           "offset_low": "Setpoint-offset laag",
           "offset_high": "Setpoint-offset hoog",
+          "offset_boost": "Setpoint-offset boost",
           "offset_start": "Setpoint-offset om te starten",
           "low_w": "Vermogensgrens uit/laag",
           "high_w": "Vermogensgrens laag/hoog",
@@ -112,7 +113,9 @@
           "settle_minutes": "COP: stabilisatietijd na een start",
           "cop_inlet": "COP: inlaattemperatuur",
           "cop_outlet_correction": "COP: correctie uitlaat (handmatig)",
-          "language": "Taal"
+          "language": "Taal",
+          "preset_efficient": "Zuinige preset",
+          "preset_capacity": "Capaciteitspreset (boost)"
         },
         "data_description": {
           "price_multiplier": "Effectieve prijs = prijs × vermenigvuldiger + opslag. Voor een kale beursprijs in Nederland: 1,21 en ongeveer 0,136.",
@@ -121,12 +124,18 @@
           "margin": "Het plan blijft zo ver binnen de band om voorspelfouten op te vangen.",
           "surcharge_auto": "Elke nacht worden de laatste 14 dagen opnieuw afgespeeld en wordt de toeslag met de laagste echte kosten gekozen.",
           "offset_low": "Setpoint = afgeronde inlaattemperatuur + offset van de stand.",
-          "offset_start": "Voor laag en hoog zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt.",
+          "offset_start": "Voor de verwarmende standen zolang de warmtepomp niet draait: een stilstaande warmtepomp start vaak pas bij een hoger setpoint. Terug naar de offset van de stand zodra het vermogen de drempel uit/laag haalt.",
+          "offset_boost": "Setpoint-offset van de stand boost (op de capaciteitspreset).",
           "cop_inlet": "Inlaat van de flow-methode. De vijversensor is nauwkeuriger als de warmtepomp hele graden meldt.",
           "cop_outlet_correction": "Wordt bij de uitlaattemperatuur opgeteld. Leeg laten om hem te leren terwijl de warmtepomp uit staat en het water stroomt (de uitlaat hoort dan de vijvertemperatuur te geven).",
-          "language": "Taal van de entiteitsnamen, de toelichtende attributen en de kaart. Automatisch volgt Home Assistant. Schermen die Home Assistant zelf tekent blijven in je profieltaal."
+          "language": "Taal van de entiteitsnamen, de toelichtende attributen en de kaart. Automatisch volgt Home Assistant. Schermen die Home Assistant zelf tekent blijven in je profieltaal.",
+          "preset_efficient": "Preset van de warmtepomp voor uit, laag en hoog. Laat beide presets leeg om de preset nooit te wijzigen.",
+          "preset_capacity": "Preset met meer vermogen en een lagere COP, gebruikt in de stand boost als hoog niet genoeg is om de vijver in de band te houden."
         }
       }
+    },
+    "error": {
+      "presets_incomplete": "Kies beide presets, en twee verschillende, of laat beide leeg."
     }
   },
   "selector": {
@@ -176,7 +185,8 @@
         "state": {
           "off": "Uit",
           "low": "Laag",
-          "high": "Hoog"
+          "high": "Hoog",
+          "boost": "Boost"
         },
         "state_attributes": {
           "reason": {
@@ -250,6 +260,9 @@
       },
       "heating_rate_high": {
         "name": "Opwarmsnelheid hoog"
+      },
+      "heating_rate_boost": {
+        "name": "Opwarmsnelheid boost"
       },
       "prediction_error": {
         "name": "Voorspelfout"

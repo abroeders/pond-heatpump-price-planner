@@ -89,3 +89,44 @@ def test_reference_dataset(reference_samples):
     assert report.new["fit"]["k"] == pytest.approx(0.012, rel=0.1)
     q, k_report = CoolingFit().fit(p, context)
     assert k_report.accepted and 0.009 < q.k_open < 0.018
+
+
+TRUE_BOOST = ModelParams(
+    power={"off": 0.005, "low": 0.39, "high": 0.90, "boost": 1.15},
+    gain={"off": 0.0, "low": 0.20, "high": 0.13, "boost": 0.10},
+    k_open=0.010,
+    offset=-0.004,
+)
+
+
+def boost_ctx(samples):
+    return LearningContext(
+        samples, now=samples[-1].t + 900, tz=TZ, classifier=ModeClassifier(capacity_preset="quick")
+    )
+
+
+def test_slow_fit_learns_boost_separately_from_high():
+    samples = simulate(TRUE_BOOST, days=28, boost="quick")
+    p, report = SlowFit(blend=1.0).fit(ModelParams(), boost_ctx(samples))
+    assert report.accepted, report.reason
+    assert p.gain["boost"] == pytest.approx(0.10, rel=0.2)
+    assert p.gain["high"] == pytest.approx(0.13, rel=0.15)
+    assert p.power["boost"] == pytest.approx(1.15, rel=0.05)
+    assert p.power["high"] == pytest.approx(0.90, rel=0.05)
+    assert "boost" in p.fitted
+    # without the preset the same quarters count as high and spoil it
+    mixed, _ = SlowFit(blend=1.0).fit(ModelParams(), ctx(samples))
+    assert mixed.power["high"] > 0.95
+
+
+def test_boost_follows_high_until_it_has_been_learned():
+    p, report = SlowFit(blend=1.0).fit(ModelParams(), ctx(simulate(TRUE, days=28)))
+    assert report.accepted and "boost" not in p.fitted
+    assert p.gain["boost"] == pytest.approx(0.9 * p.gain["high"])
+
+
+def test_cooling_fit_subtracts_boost_heat():
+    samples = simulate(TRUE_BOOST, days=7, boost="quick")
+    p, report = CoolingFit().fit(TRUE_BOOST.copy(), boost_ctx(samples))
+    assert report.accepted, report.reason
+    assert p.k_open == pytest.approx(0.010, rel=0.15)

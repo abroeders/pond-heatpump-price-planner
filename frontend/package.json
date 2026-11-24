@@ -1,6 +1,6 @@
 {
   "name": "pond-heatpump-planner-card",
-  "version": "2026.11.4",
+  "version": "2026.11.5",
   "private": true,
   "description": "Lovelace card for the Pond Heat Pump Price Planner integration",
   "license": "Apache-2.0",

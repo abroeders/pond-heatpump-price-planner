@@ -27,16 +27,18 @@ class Sample:
     power: float | None  # mean heat pump power over the quarter (W)
     cover: bool = False  # insulation cover switch
     price: float | None = None  # effective purchase price of the quarter (€/kWh)
+    preset: str | None = None  # preset of the heat pump at the end of the quarter
 
     def to_list(self) -> list:
-        return [self.t, self.pond, self.outdoor, self.power, int(self.cover), self.price]
+        return [self.t, self.pond, self.outdoor, self.power, int(self.cover), self.price, self.preset]
 
     @classmethod
     def from_list(cls, row: list) -> Sample:
         t, pond, outdoor, power, *rest = row
         cover = bool(rest[0]) if rest else False
         price = rest[1] if len(rest) > 1 else None
-        return cls(float(t), pond, outdoor, power, cover, price)
+        preset = rest[2] if len(rest) > 2 else None
+        return cls(float(t), pond, outdoor, power, cover, price, preset)
 
 
 class PowerIntegrator:
@@ -87,7 +89,7 @@ class PowerIntegrator:
             del self._v[:i]
 
 
-def last_value(times: list[float], values: list[float | None], t: float) -> float | None:
+def last_value(times: list[float], values: list, t: float):
     """Value of the step signal at time t (the last point at or before t)."""
     i = bisect.bisect_right(times, t) - 1
     return values[i] if i >= 0 else None
@@ -101,10 +103,11 @@ def to_quarters(
 ) -> list[Sample]:
     """Convert sensor histories to quarter samples between start and end.
 
-    `series` has the keys 'pond', 'outdoor' and 'power', each a list of (epoch, value) state changes.
-    Temperatures are taken at the end of each quarter; power is the time-weighted mean.
+    `series` has the keys 'pond', 'outdoor' and 'power', each a list of (epoch, value) state changes, and
+    optionally 'preset' with (epoch, preset) changes. Temperatures and the preset are taken at the end of
+    each quarter; power is the time-weighted mean.
     """
-    pts = {k: sorted(series.get(k, ()), key=lambda p: p[0]) for k in ("pond", "outdoor", "power")}
+    pts = {k: sorted(series.get(k, ()), key=lambda p: p[0]) for k in ("pond", "outdoor", "power", "preset")}
     times = {k: [p[0] for p in v] for k, v in pts.items()}
     values = {k: [p[1] for p in v] for k, v in pts.items()}
     power = PowerIntegrator()
@@ -121,10 +124,29 @@ def to_quarters(
                 outdoor=last_value(times["outdoor"], values["outdoor"], end_q),
                 power=power.mean(q, q + QUARTER),
                 cover=cover,
+                preset=last_value(times["preset"], values["preset"], end_q),
             )
         )
         q += QUARTER
     return out
+
+
+def fill_presets(samples: list[Sample], points: Iterable[tuple[float, str | None]]) -> int:
+    """Set the preset of samples without one from (epoch, preset) changes; returns how many were set.
+
+    Only quarters that end after the first change are filled: before it the preset is unknown.
+    """
+    pts = sorted(points, key=lambda p: p[0])
+    if not pts:
+        return 0
+    times, values = [p[0] for p in pts], [p[1] for p in pts]
+    filled = 0
+    for s in samples:
+        end_q = s.t + QUARTER - 1e-6
+        if s.preset is None and end_q >= times[0]:
+            s.preset = last_value(times, values, end_q)
+            filled += s.preset is not None
+    return filled
 
 
 def prune(samples: list[Sample], now: float, days: int = RETENTION_DAYS) -> list[Sample]:
