@@ -7,6 +7,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.5] - 2026-11-24
+
 ### Added
 
 - Boost mode for cold weather: with an efficient and a capacity preset set in the options (for example
@@ -185,7 +187,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.5...HEAD
+[2026.11.5]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...v2026.11.5
 [2026.11.4]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.3...v2026.11.4
 [2026.11.3]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...v2026.11.3
 [2026.11.2]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.1...v2026.11.2
