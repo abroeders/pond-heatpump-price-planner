@@ -1,18 +1,50 @@
 version: 2
+# Updates go to develop and are grouped per ecosystem. Major versions are upgraded by hand.
 updates:
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  # requirements/minimum/ stays on the minimum Home Assistant version from hacs.json.
   - package-ecosystem: pip
     directory: /requirements
+    target-branch: develop
+    exclude-paths:
+      - "requirements/minimum/**"
     schedule:
       interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /frontend
+    target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      card:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /scripts/mermaid
+    target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      mermaid:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

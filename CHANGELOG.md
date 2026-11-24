@@ -7,6 +7,13 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.6] - 2026-11-24
+
+### Changed
+
+- CI: Dependabot updates go to `develop`, grouped per ecosystem and without major versions; the minimum
+  Home Assistant test version stays fixed, and the test dependencies are locked including transitive ones (#51).
+
 ## [2026.11.5] - 2026-11-24
 
 ### Added
@@ -187,7 +194,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.5...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.6...HEAD
+[2026.11.6]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.5...v2026.11.6
 [2026.11.5]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...v2026.11.5
 [2026.11.4]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.3...v2026.11.4
 [2026.11.3]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.2...v2026.11.3
