@@ -7,6 +7,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2026.11.7] - 2026-11-24
+
 ### Changed
 
 - CI: the test dependencies are installed with `--require-hashes` (#51).
@@ -198,7 +200,8 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Home Assistant 2026.3 or later.
 
-[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.6...HEAD
+[Unreleased]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.7...HEAD
+[2026.11.7]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.6...v2026.11.7
 [2026.11.6]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.5...v2026.11.6
 [2026.11.5]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.4...v2026.11.5
 [2026.11.4]: https://github.com/abroeders/pond-heatpump-price-planner/compare/v2026.11.3...v2026.11.4
