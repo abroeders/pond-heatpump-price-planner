@@ -205,7 +205,7 @@ export function hoverInfo(plan: PlanModel, s: ChartScales, t: number): HoverInfo
     const end = t + QUARTER;
     const near = s.measured.filter((p) => Math.abs(p.t - end) <= QUARTER / 2);
     if (near.length) {
-      const best = near.reduce((a, b) => (Math.abs(b.t - end) < Math.abs(a.t - end) ? b : a));
+      const best = near.reduce((a, b) => (Math.abs(b.t - end) < Math.abs(a.t - end) ? b : a), near[0]);
       return { ...info, ...past, temp: best.temp, measured: true };
     }
     return { ...info, ...past };
