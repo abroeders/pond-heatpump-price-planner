@@ -6,7 +6,7 @@ import { cardLanguage } from "./localize";
 import type { CardConfig, HassEntity, HeatPumpKey, HomeAssistant, Section } from "./types";
 import { SECTIONS } from "./types";
 
-export type Mode = "off" | "low" | "high";
+export type Mode = "off" | "low" | "high" | "boost";
 export type PumpState = "running" | "fault" | "off";
 
 export interface IllustrationModel {
@@ -96,6 +96,7 @@ export interface ModelSectionModel {
   cooling: string | null;
   heatingLow: string | null;
   heatingHigh: string | null;
+  heatingBoost: string | null;
   predictionError: string | null;
   learned: string | null;
   copByOutdoor: [string, string | null][];
@@ -118,7 +119,7 @@ export interface CardViewModel {
   signature: string;
 }
 
-const MODES: Mode[] = ["off", "low", "high"];
+const MODES: Mode[] = ["off", "low", "high", "boost"];
 
 function pondHistory(raw: unknown): HistoryPoint[] {
   if (!Array.isArray(raw)) return [];
@@ -295,6 +296,7 @@ export function buildViewModel(hass: HomeAssistant, config: CardConfig, now = Da
     cooling: withUnit(value(hass, p.cooling_coefficient), "1/h", 4, language),
     heatingLow: withUnit(value(hass, p.heating_rate_low), "K/h", 3, language),
     heatingHigh: withUnit(value(hass, p.heating_rate_high), "K/h", 3, language),
+    heatingBoost: withUnit(value(hass, p.heating_rate_boost), "K/h", 3, language),
     predictionError: withUnit(value(hass, p.prediction_error), "K", 2, language),
     learned: available(state(hass, p.model_status))
       ? time(state(hass, p.model_status)!.state, language)

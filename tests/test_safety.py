@@ -127,3 +127,21 @@ def test_mismatch_resets_on_new_mode_and_without_data():
     assert m.observe(None, 5000) == (False, False)
     m.applied("low", 100)
     assert m.observe("off", 1000) == (False, False)
+
+
+def test_far_below_gives_boost_when_available():
+    assert decide(SafetyGuard(), 14.4, allow_boost=True) == Decision("boost", FAR_BELOW_BAND)
+    assert decide(SafetyGuard(), 14.4, allow_boost=True, allow_high=False) == Decision("low", FAR_BELOW_BAND)
+
+
+def test_below_band_keeps_boost_only_when_available():
+    assert decide(SafetyGuard(), 14.7, "boost", allow_boost=True) == Decision("boost", BELOW_BAND)
+    assert decide(SafetyGuard(), 14.7, "boost") == Decision("high", BELOW_BAND)
+    assert decide(SafetyGuard(), 15.0, "boost", allow_boost=True) == Decision("boost", PLAN)
+
+
+def test_boost_setpoint_uses_its_own_offset_and_the_start_offset():
+    s = OffsetSetpoint()
+    assert s.setpoint("boost", 14.0, 14.0, 7, 35, 1) == 15.0
+    assert s.setpoint("boost", 14.0, 14.0, 7, 35, 1, running=False) == 16.0
+    assert OffsetSetpoint({"boost": 2}).setpoint("boost", 14.0, 14.0, 7, 35, 1) == 16.0

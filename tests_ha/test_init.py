@@ -7,9 +7,14 @@ from custom_components.pond_heatpump_price_planner.const import DEFAULT_OPTIONS,
 from .conftest import CLIMATE, LINKS
 
 
-async def setup(hass: HomeAssistant) -> MockConfigEntry:
+async def setup(hass: HomeAssistant, options: dict | None = None) -> MockConfigEntry:
     entry = MockConfigEntry(
-        domain=DOMAIN, title="Pond", unique_id=CLIMATE, data=LINKS, options=DEFAULT_OPTIONS, version=2
+        domain=DOMAIN,
+        title="Pond",
+        unique_id=CLIMATE,
+        data=LINKS,
+        options=options or DEFAULT_OPTIONS,
+        version=2,
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -21,7 +26,7 @@ def state(hass: HomeAssistant, domain: str, key: str):
     from homeassistant.helpers import entity_registry as er
 
     entity_id = er.async_get(hass).async_get_entity_id(domain, DOMAIN, f"{hass.data['_entry_id']}_{key}")
-    return hass.states.get(entity_id)
+    return hass.states.get(entity_id) if entity_id else None
 
 
 async def test_setup_creates_entities_and_plans_in_dry_run(hass: HomeAssistant, pond_states) -> None:
@@ -274,3 +279,81 @@ async def test_flow_cop_shows_its_inlet_and_outlet_correction(hass: HomeAssistan
     assert attrs["inlet"] == "pond"
     assert attrs["offset_source"] == "manual" and attrs["outlet_offset"] == 0.28
     assert attrs["calibrating"] is False
+
+
+PRESETS = {**DEFAULT_OPTIONS, "preset_efficient": "quiet_heat", "preset_capacity": "quick_heat"}
+
+
+def with_presets(hass: HomeAssistant, preset: str = "quiet_heat") -> None:
+    attrs = hass.states.get(CLIMATE).attributes
+    hass.states.async_set(
+        CLIMATE, "heat", {**attrs, "preset_modes": ["quiet_heat", "quick_heat"], "preset_mode": preset}
+    )
+
+
+async def test_boost_switches_to_the_capacity_preset_and_back(hass: HomeAssistant, pond_states) -> None:
+    from .conftest import POND
+
+    hass.states.async_set(POND, "14.3", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    with_presets(hass)
+    entry = await setup(hass, PRESETS)
+    presets = async_mock_service(hass, "climate", "set_preset_mode")
+    async_mock_service(hass, "climate", "set_temperature")
+    hass.data["_entry_id"] = entry.entry_id
+    assert state(hass, "sensor", "heating_rate_boost") is not None
+    switch = state(hass, "switch", "control")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": switch.entity_id}, blocking=True)
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    assert entry.runtime_data.data.decision.mode == "boost"  # far below the band
+    assert presets[-1].data == {"entity_id": CLIMATE, "preset_mode": "quick_heat"}
+    assert state(hass, "sensor", "mode").attributes["preset"] == "quick_heat"
+    sent = len(presets)
+    with_presets(hass, "quick_heat")
+    await entry.runtime_data.async_replan()
+    await hass.async_block_till_done()
+    assert len(presets) == sent  # already on the capacity preset: not sent again
+    await hass.services.async_call("switch", "turn_off", {"entity_id": switch.entity_id}, blocking=True)
+    await hass.async_block_till_done()
+    assert presets[-1].data["preset_mode"] == "quiet_heat"  # control off: back to the efficient preset
+
+
+async def test_without_presets_the_preset_is_never_changed(hass: HomeAssistant, pond_states) -> None:
+    from .conftest import POND
+
+    hass.states.async_set(POND, "14.3", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    with_presets(hass)
+    entry = await setup(hass)
+    presets = async_mock_service(hass, "climate", "set_preset_mode")
+    async_mock_service(hass, "climate", "set_temperature")
+    hass.data["_entry_id"] = entry.entry_id
+    assert state(hass, "sensor", "heating_rate_boost") is None
+    switch = state(hass, "switch", "control")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": switch.entity_id}, blocking=True)
+    await entry.runtime_data.async_replan()
+    await hass.services.async_call("switch", "turn_off", {"entity_id": switch.entity_id}, blocking=True)
+    await hass.async_block_till_done()
+    assert entry.runtime_data.data.decision.mode == "high"
+    assert not presets
+
+
+async def test_quarters_on_the_capacity_preset_show_as_boost(hass: HomeAssistant, pond_states) -> None:
+    import time
+
+    from custom_components.pond_heatpump_price_planner.core.samples import Sample
+
+    with_presets(hass, "quick_heat")
+    entry = await setup(hass, PRESETS)
+    hass.data["_entry_id"] = entry.entry_id
+    coordinator = entry.runtime_data
+    now = time.time() // 900 * 900
+    coordinator.store.replace_samples(
+        [
+            Sample(t=now - 1800, pond=14.0, outdoor=-4, power=1100, preset="quick_heat"),
+            Sample(t=now - 900, pond=14.1, outdoor=-4, power=950, preset="quiet_heat"),
+        ]
+    )
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    history = state(hass, "sensor", "mode").attributes["pond_history"]
+    assert [p["mode"] for p in history] == ["boost", "high"]

@@ -7,6 +7,16 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Boost mode for cold weather: with an efficient and a capacity preset set in the options (for example
+  `quiet_heat` and `quick_heat`), the planner can choose a fourth mode, boost, per quarter. The integration
+  switches the heat pump's preset itself, only when it changes, and back to the efficient preset when
+  control is turned off. Each quarter sample stores the preset, so boost learns its own power and heating
+  rate and high is no longer mixed with capacity-preset data; older quarters get their preset from the
+  recorder once. New options `preset_efficient`, `preset_capacity` and `offset_boost`, a `preset` attribute
+  on the mode sensor, a *Heating rate boost* sensor, and red boost bars in the card (#37).
+
 ### Fixed
 
 - The heat pump drawing of the card showed a stopped heat pump when no `fan`, `compressor` or `flow` entity

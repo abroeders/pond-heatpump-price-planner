@@ -34,3 +34,22 @@ def test_mode_classifier():
     assert c.mode(390) == "low"
     assert c.mode(900) == "high"
     assert ModeClassifier(low_w=500, high_w=1000).mode(900) == "low"
+
+
+def test_boost_parameters_default_to_high():
+    p = ModelParams(power={"off": 0.0, "low": 0.4, "high": 0.9}, gain={"off": 0.0, "low": 0.3, "high": 0.2})
+    assert p.power["boost"] == 0.9 and p.gain["boost"] == pytest.approx(0.18)
+    old = ModelParams.from_dict({"gain": {"low": 0.3, "high": 0.15}, "power": {"high": 0.95}})
+    assert old.gain["boost"] == pytest.approx(0.135)  # stored before boost existed: boost starts from high
+    assert old.power["boost"] == 1.10
+    assert ModelParams.from_dict(old.to_dict()) == old
+
+
+def test_mode_classifier_boost_needs_the_capacity_preset():
+    c = ModeClassifier(capacity_preset="quick_heat")
+    assert c.mode(1100, "quick_heat") == "boost"
+    assert c.mode(1100, "quiet_heat") == "high"
+    assert c.mode(1100) == "high"  # unknown preset: the efficient one
+    assert c.mode(390, "quick_heat") == "low"
+    assert c.mode(5, "quick_heat") == "off"
+    assert ModeClassifier().mode(1100, "quick_heat") == "high"  # no boost configured

@@ -49,10 +49,12 @@ def simulate(
     k_change: tuple[float, float] | None = None,
     noise: float = 0.005,
     seed: int = 1,
+    boost: str | None = None,
 ) -> list[Sample]:
     """Synthetic pond under a low-mode thermostat, with a few high-mode runs.
 
     k_change = (day, new_k_open) changes the true cooling coefficient at that day (insulation cover).
+    boost = the capacity preset: adds boost runs on that preset; the other quarters get the preset "quiet".
     """
     rng = random.Random(seed)
     p = ModelParams.from_dict(params.to_dict())
@@ -72,9 +74,12 @@ def simulate(
         mode = "low" if on else "off"
         if int(day) % 3 == 1 and 12 <= (i % 96) / 4 < 16:
             mode = "high"
+        if boost and int(day) % 3 == 2 and 12 <= (i % 96) / 4 < 16:
+            mode = "boost"
         temp = p.step(temp, mode, outdoor, starting=(prev == "off" and mode != "off"))
         prev = mode
         measured = round(temp + rng.gauss(0, noise), 2)
         power = p.power[mode] * 1000 * (1 + rng.gauss(0, 0.03))
-        out.append(Sample(t, measured, round(outdoor, 1), power))
+        preset = (boost if mode == "boost" else "quiet") if boost else None
+        out.append(Sample(t, measured, round(outdoor, 1), power, preset=preset))
     return out

@@ -39,6 +39,7 @@ OPT_HORIZON = "horizon"
 OPT_OFFSET_OFF = "offset_off"
 OPT_OFFSET_LOW = "offset_low"
 OPT_OFFSET_HIGH = "offset_high"
+OPT_OFFSET_BOOST = "offset_boost"
 OPT_OFFSET_START = "offset_start"
 OPT_LOW_W = "low_w"
 OPT_HIGH_W = "high_w"
@@ -48,6 +49,8 @@ OPT_SETTLE = "settle_minutes"
 OPT_LANGUAGE = "language"
 OPT_COP_INLET = "cop_inlet"
 OPT_COP_OUTLET_CORRECTION = "cop_outlet_correction"  # absent: learned
+OPT_PRESET_EFFICIENT = "preset_efficient"  # absent: the integration does not change the preset
+OPT_PRESET_CAPACITY = "preset_capacity"  # absent: no boost mode
 
 COP_INLETS = ("heat_pump", "pond")
 
@@ -72,6 +75,7 @@ DEFAULT_OPTIONS = {
     OPT_OFFSET_OFF: -2,
     OPT_OFFSET_LOW: 0,
     OPT_OFFSET_HIGH: 1,
+    OPT_OFFSET_BOOST: 1,
     OPT_OFFSET_START: 2,
     OPT_LOW_W: 150,
     OPT_HIGH_W: 650,

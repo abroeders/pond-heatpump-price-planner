@@ -26,7 +26,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
         "applied": vars(c.data.applied) if c.data.applied else None,
         "price_status": c.data.price_status,
         "plan": {
-            "modes": "".join({"off": ".", "low": "l", "high": "H"}[m] for m in plan.modes),
+            "modes": "".join({"off": ".", "low": "l", "high": "H", "boost": "B"}[m] for m in plan.modes),
             "energy_kwh": plan.energy_kwh,
             "cost": plan.cost,
             "starts": plan.starts,

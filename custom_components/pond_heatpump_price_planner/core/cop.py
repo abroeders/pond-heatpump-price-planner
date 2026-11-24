@@ -368,7 +368,11 @@ def fit_loss(
     Off means: off during the whole slope window of the hour.
     """
     start = now - days * 86400
-    rows = [h for h in hours if h.slope is not None and start <= h.t < now and h.w_low == 0 and h.w_high == 0]
+    rows = [
+        h
+        for h in hours
+        if h.slope is not None and start <= h.t < now and h.w_low == 0 and h.w_high == 0 and h.w_boost == 0
+    ]
     if len(rows) < min_hours:
         return None
     y = -capacity * np.array([h.slope for h in rows])
@@ -395,11 +399,13 @@ def cop_pond(
     for h in hours:
         if h.slope is None or not start <= h.t < now:
             continue
-        elec = h.w_low + h.w_high  # kWh in one hour, averaged over the slope window
+        elec = h.w_low + h.w_high + h.w_boost  # kWh in one hour, averaged over the slope window
         if elec < 0.05:
             continue
         heat = capacity * h.slope + loss.loss_kw(h.w_delta)
-        rows.append((heat, elec, 1.0, _bin_of(h.outdoor), "high" if h.w_high > h.w_low else "low"))
+        # boost counts as high: the COP by power has two levels
+        level = "high" if h.w_high + h.w_boost > h.w_low else "low"
+        rows.append((heat, elec, 1.0, _bin_of(h.outdoor), level))
     return _summarize(rows, min_hours)
 
 

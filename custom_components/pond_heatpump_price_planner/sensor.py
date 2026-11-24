@@ -68,7 +68,7 @@ def _pond_history(c: PlannerCoordinator) -> list[dict[str, Any]]:
         if s.pond is None or s.t + 900 < since:
             continue
         item: dict[str, Any] = {"time": _ts(s.t + 900).isoformat(), "temp": round(s.pond, 2)}
-        mode = c.classifier.mode(s.power)
+        mode = c.classifier.mode(s.power, s.preset)
         if mode is not None:
             item["mode"] = mode
         if s.price is not None:
@@ -133,6 +133,7 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
             "reason_text": c.texts.attribute_text("mode", "reason", _reason(c)),
             "plan_mode": _d(c).plan.mode if _d(c).plan else None,
             "measured_mode": _d(c).measured_mode,
+            "preset": _d(c).applied.preset if _d(c).applied else None,
             "control": bool(c.settings["control"]),
             "would_set": _d(c).applied.setpoint if _d(c).applied else None,
             "apply_result": _apply_result(c),
@@ -251,6 +252,14 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
         attrs_fn=lambda c: {"gain": c.params.gain["high"], "power_kw": c.params.power["high"]},
     ),
     PlannerSensorDescription(
+        key="heating_rate_boost",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement="K/h",
+        suggested_display_precision=3,
+        value_fn=lambda c: _round(c.params.rate("boost"), 4),
+        attrs_fn=lambda c: {"gain": c.params.gain["boost"], "power_kw": c.params.power["boost"]},
+    ),
+    PlannerSensorDescription(
         key="prediction_error",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.TEMPERATURE_DELTA,
@@ -289,7 +298,9 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: PlannerCoordinator = entry.runtime_data
-    async_add_entities(PlannerSensor(coordinator, d) for d in SENSORS)
+    async_add_entities(
+        PlannerSensor(coordinator, d) for d in SENSORS if d.key != "heating_rate_boost" or coordinator.boost
+    )
 
 
 class PlannerSensor(PlannerEntity, SensorEntity):

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-MODE_RANK = {"off": 0, "low": 1, "high": 2}
+MODE_RANK = {"off": 0, "low": 1, "high": 2, "boost": 3}
 
 NO_POND_TEMPERATURE = "no_pond_temperature"
 FAR_BELOW_BAND = "far_below_band"
@@ -55,6 +55,7 @@ class SafetyGuard:
         target: float,
         band: float,
         allow_high: bool = True,
+        allow_boost: bool = False,
         previous: str = "off",
     ) -> Decision:
         s = self.settings
@@ -67,10 +68,13 @@ class SafetyGuard:
         below = self._limit(BELOW_BAND, pond < lower, pond >= lower + h)
         above = self._limit(ABOVE_BAND, pond > upper, pond <= upper - h)
 
+        boost = allow_high and allow_boost
         if far:
-            return Decision("high" if allow_high else "low", FAR_BELOW_BAND)
+            return Decision("boost" if boost else "high" if allow_high else "low", FAR_BELOW_BAND)
         if below:
             mode = plan_mode if plan_mode is not None and MODE_RANK[plan_mode] >= MODE_RANK["low"] else "low"
+            if mode == "boost" and not boost:
+                mode = "high"
             if mode == "high" and not allow_high:
                 mode = "low"
             return Decision(mode, BELOW_BAND)

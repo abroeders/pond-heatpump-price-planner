@@ -81,6 +81,31 @@ async def test_options_flow(hass: HomeAssistant, pond_states) -> None:
     assert entry.options["price_multiplier"] == 1.21
 
 
+async def test_options_flow_with_presets(hass: HomeAssistant, pond_states) -> None:
+    attrs = hass.states.get(CLIMATE).attributes
+    hass.states.async_set(CLIMATE, "heat", {**attrs, "preset_modes": ["quiet_heat", "quick_heat"]})
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=CLIMATE, data=LINKS, options=DEFAULT_OPTIONS, version=2)
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert "preset_capacity" in result["data_schema"].schema
+    half = {**DEFAULT_OPTIONS, "preset_efficient": "quiet_heat"}
+    result = await hass.config_entries.options.async_configure(result["flow_id"], half)
+    assert result["type"] is FlowResultType.FORM and result["errors"] == {
+        "preset_capacity": "presets_incomplete"
+    }
+    both = {**half, "preset_capacity": "quick_heat"}
+    result = await hass.config_entries.options.async_configure(result["flow_id"], both)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["preset_capacity"] == "quick_heat"
+
+
+async def test_options_flow_without_presets_has_no_preset_fields(hass: HomeAssistant, pond_states) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=CLIMATE, data=LINKS, options=DEFAULT_OPTIONS, version=2)
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert "preset_capacity" not in result["data_schema"].schema
+
+
 async def test_reconfigure_removes_an_emptied_link(hass: HomeAssistant, pond_states) -> None:
     entry = MockConfigEntry(domain=DOMAIN, unique_id=CLIMATE, data=LINKS, options=DEFAULT_OPTIONS, version=2)
     entry.add_to_hass(hass)

@@ -138,4 +138,4 @@ def thermostat(rows, target=15.0, band=0.25) -> ReplayResult:
     return evaluate(rows, modes, temps, target)
 
 
-assert MODES == ("off", "low", "high")
+assert MODES == ("off", "low", "high", "boost")

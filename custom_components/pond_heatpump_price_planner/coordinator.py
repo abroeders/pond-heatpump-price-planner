@@ -14,6 +14,7 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from homeassistant.components.climate import ATTR_PRESET_MODE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
@@ -48,10 +49,13 @@ from .const import (
     OPT_HORIZON,
     OPT_LOW_W,
     OPT_MARGIN,
+    OPT_OFFSET_BOOST,
     OPT_OFFSET_HIGH,
     OPT_OFFSET_LOW,
     OPT_OFFSET_OFF,
     OPT_OFFSET_START,
+    OPT_PRESET_CAPACITY,
+    OPT_PRESET_EFFICIENT,
     OPT_RUN_THRESHOLD,
     OPT_SETTLE,
     OPT_START_PENALTY,
@@ -90,6 +94,7 @@ from .core.costs import EnergyCosts
 from .core.learning import FitReport, Learner, LearningContext, hourly
 from .core.model import ModeClassifier, ModelParams
 from .core.planner import DynamicProgrammingPlanner, Plan, PlanRequest
+from .core.preset import CapacityPreset, preset_strategy
 from .core.pricing import day_ahead_known_until
 from .core.safety import Decision, SafetyGuard
 from .core.samples import QUARTER, PowerIntegrator, Sample, quarter_start
@@ -97,7 +102,7 @@ from .core.seeding import SeedEntities
 from .core.setpoint import OffsetSetpoint
 from .core.tracking import PredictionTracker
 from .core.tuning import TuningResult, tune_surcharge
-from .history import async_seed_store
+from .history import async_backfill_presets, async_seed_store
 from .inputs import InputReader
 from .language import PlannerTexts
 from .storage import PlannerStore
@@ -170,7 +175,14 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
         self.texts = PlannerTexts(None, {})  # loaded in async_setup_entry
         self.store = PlannerStore(hass, entry.entry_id)
         self.inputs = InputReader(hass, self.links, self.options)
-        self.classifier = ModeClassifier(float(self.options[OPT_LOW_W]), float(self.options[OPT_HIGH_W]))
+        self.presets = preset_strategy(
+            self.options.get(OPT_PRESET_EFFICIENT), self.options.get(OPT_PRESET_CAPACITY)
+        )
+        self.classifier = ModeClassifier(
+            float(self.options[OPT_LOW_W]),
+            float(self.options[OPT_HIGH_W]),
+            self.presets.capacity if isinstance(self.presets, CapacityPreset) else None,
+        )
         self.planner = DynamicProgrammingPlanner()
         self.learner = Learner()
         self.guard = SafetyGuard()
@@ -183,9 +195,11 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                     "off": self.options[OPT_OFFSET_OFF],
                     "low": self.options[OPT_OFFSET_LOW],
                     "high": self.options[OPT_OFFSET_HIGH],
+                    "boost": self.options[OPT_OFFSET_BOOST],
                     "start": self.options[OPT_OFFSET_START],
                 }
             ),
+            presets=self.presets,
         )
         self.power = PowerIntegrator()
         self.flow = FlowAccumulator(
@@ -213,14 +227,30 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
     def params(self) -> ModelParams:
         return self.store.params
 
+    @property
+    def boost(self) -> bool:
+        """Whether the boost mode is available: both presets configured and high allowed."""
+        return isinstance(self.presets, CapacityPreset) and bool(self.options[OPT_ALLOW_HIGH])
+
+    def preset(self) -> str | None:
+        """Current preset of the heat pump."""
+        state = self.hass.states.get(self.links[CONF_CLIMATE])
+        return state.attributes.get(ATTR_PRESET_MODE) if state is not None else None
+
     async def async_start(self) -> None:
         await self.store.async_load()
         await async_seed_store(
             self.hass,
             self.store,
-            SeedEntities(self.links[CONF_POND], self.links[CONF_OUTDOOR], self.links[CONF_POWER]),
+            SeedEntities(
+                self.links[CONF_POND],
+                self.links[CONF_OUTDOOR],
+                self.links[CONF_POWER],
+                self.links[CONF_CLIMATE],
+            ),
             time.time(),
         )
+        await async_backfill_presets(self.hass, self.store, self.links[CONF_CLIMATE], time.time())
         now = time.time()
         power = self.inputs.power_w()
         if power is not None:
@@ -333,6 +363,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 power=self.power.mean(q, q + QUARTER),
                 cover=bool(self.settings[SET_COVER]),
                 price=self.inputs.price_now(q),
+                preset=self.preset(),
             )
         )
         self.power.prune(q)
@@ -372,7 +403,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
             target, band = self.target, float(self.settings[SET_BAND])
             pond = self.inputs.pond()
             power = self.inputs.power_w()
-            measured = self.classifier.mode(power)
+            measured = self.classifier.mode(power, self.preset())
             prices = self.inputs.prices(start)
             forecast = await self.inputs.async_outdoor_forecast(now)
             outdoor = forecast.quarters(start, prices.quarters, self.inputs.outdoor())
@@ -398,6 +429,8 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                     cover=bool(self.settings[SET_COVER]),
                     start_penalty=float(self.options[OPT_START_PENALTY]),
                     allow_high=bool(self.options[OPT_ALLOW_HIGH]),
+                    allow_boost=self.boost,
+                    preset_penalty=float(self.options[OPT_START_PENALTY]),
                 )
                 try:
                     plan = await self.hass.async_add_executor_job(self.planner.make_plan, request)
@@ -410,6 +443,7 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
                 target=target,
                 band=band,
                 allow_high=bool(self.options[OPT_ALLOW_HIGH]),
+                allow_boost=self.boost,
                 previous=self._last_mode or "off",
             )
             self._started = self._running(power)
@@ -470,6 +504,8 @@ class PlannerCoordinator(DataUpdateCoordinator[PlannerData]):
     # --- settings ----------------------------------------------------------------------------------
     async def async_set_setting(self, key: str, value: Any) -> None:
         self.store.set_setting(key, value)
+        if key == SET_CONTROL and not value:
+            await self.controller.async_release()
         if key in (SET_TARGET, SET_BAND, SET_COVER, SET_CONTROL):
             self.schedule_replan()
         if key in (SET_VOLUME, SET_FLOW, SET_COP_METHOD, SET_COVER):
