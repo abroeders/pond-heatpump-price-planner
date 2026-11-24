@@ -107,3 +107,45 @@ def test_runtime_per_plan():
 def test_empty_request_raises():
     with pytest.raises(ValueError):
         plan([])
+
+
+def test_boost_only_when_allowed():
+    cold = plan([0.30] * N, outdoor=-8.0, pond=14.6)
+    assert "boost" not in cold.modes
+    assert "boost" not in plan([0.30] * N, outdoor=-8.0, pond=14.6, allow_boost=True, allow_high=False).modes
+
+
+def test_boost_when_high_cannot_keep_the_pond_in_the_band():
+    # at -8 °C high (0.19 K/h) cannot cover the loss (k · 23 K ≈ 0.28 K/h); boost (0.36 K/h) can
+    params = ModelParams(
+        power={"off": 0.005, "low": 0.39, "high": 0.90, "boost": 1.20},
+        gain={"off": 0.0, "low": 0.30, "high": 0.21, "boost": 0.30},
+    )
+    without = plan([0.30] * N, outdoor=-8.0, params=params)
+    with_boost = plan([0.30] * N, outdoor=-8.0, params=params, allow_boost=True)
+    assert min(without.temps) < 14.75
+    assert "boost" in with_boost.modes
+    assert min(with_boost.temps) >= 14.75
+
+
+def test_no_boost_when_high_is_enough():
+    p = plan([0.30] * N, outdoor=8.0, allow_boost=True)
+    assert "boost" not in p.modes
+
+
+def test_preset_penalty_limits_switching_between_high_and_boost():
+    rng = np.random.default_rng(5)
+    price = list(0.30 + 0.2 * rng.random(N))
+    params = ModelParams(
+        power={"off": 0.005, "low": 0.39, "high": 0.90, "boost": 1.20},
+        gain={"off": 0.0, "low": 0.30, "high": 0.21, "boost": 0.30},
+    )
+
+    def changes(p):
+        pairs = zip(p.modes, p.modes[1:], strict=False)
+        return sum("boost" in (a, b) and a != b and "off" not in (a, b) for a, b in pairs)
+
+    free = plan(price, outdoor=-8.0, params=params, allow_boost=True, preset_penalty=0.0)
+    costly = plan(price, outdoor=-8.0, params=params, allow_boost=True, preset_penalty=1.0)
+    assert changes(costly) <= changes(free)
+    assert changes(costly) <= 2

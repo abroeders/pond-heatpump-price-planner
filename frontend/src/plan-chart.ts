@@ -47,7 +47,7 @@ export function planChart(
 ): TemplateResult {
   const q = plan.quarters;
   const bw = s.x(q[0].t + QUARTER) - s.x(q[0].t);
-  const level = { off: 0, low: 0.5, high: 1 } as const;
+  const level = { off: 0, low: 0.5, high: 1, boost: 1 } as const;
   const bars = q.map((x, i) => {
     if (x.t < s.start || x.t >= s.end) return svg``;
     const h = 18 * level[x.mode];
@@ -193,7 +193,8 @@ export class PhpcPlanChart extends LitElement {
 
 export interface LegendItem {
   key: string;
-  swatch: "line" | "predicted" | "dashed" | "area" | "low" | "high" | "step" | "expensive" | "solar" | "now" | "dotted";
+  swatch:
+    | "line" | "predicted" | "dashed" | "area" | "low" | "high" | "boost" | "step" | "expensive" | "solar" | "now" | "dotted";
 }
 
 /** Legend items for this plan; optional items only when the plan contains them. */
@@ -206,6 +207,9 @@ export function legendItems(plan: PlanModel): LegendItem[] {
     { key: "band", swatch: "area" },
     { key: "low", swatch: "low" },
     { key: "high", swatch: "high" },
+    ...(plan.quarters.some((q) => q.mode === "boost") || s.past.some((q) => q.mode === "boost")
+      ? [{ key: "boost", swatch: "boost" } as LegendItem]
+      : []),
     { key: "price", swatch: "step" },
   ];
   if (s.expensive.some(Boolean) || s.pastExpensive.some(Boolean)) items.push({ key: "legend_expensive", swatch: "expensive" });
@@ -230,6 +234,7 @@ export const planChartStyles = css`
   .sw.dashed { border-top: 1.5px dashed var(--primary-text-color); height: 0; opacity: 0.6; }
   .sw.area { background: var(--success-color, #66bb6a); opacity: 0.3; }
   .sw.low { background: #1e88e5; opacity: 0.55; } .sw.high { background: #ef6c00; opacity: 0.6; }
+  .sw.boost { background: #c62828; opacity: 0.6; }
   .sw.step { border-top: 1.2px solid var(--secondary-text-color); height: 0; }
   .sw.expensive { background: var(--warning-color, #ff9800); opacity: 0.2; }
   .sw.solar { background: #fdd835; height: 4px; }
@@ -240,7 +245,8 @@ export const planChartStyles = css`
   .expensive { fill: var(--warning-color, #ff9800); opacity: 0.07; }
   .sun { fill: #fdd835; }
   .bar.low { fill: #1e88e5; opacity: 0.55; } .bar.high { fill: #ef6c00; opacity: 0.6; } .bar.off { fill: none; }
-  .bar.past.low { opacity: 0.3; } .bar.past.high { opacity: 0.35; }
+  .bar.boost { fill: #c62828; opacity: 0.6; }
+  .bar.past.low { opacity: 0.3; } .bar.past.high, .bar.past.boost { opacity: 0.35; }
   .target { stroke: var(--primary-text-color); stroke-dasharray: 4 4; opacity: 0.6; }
   .temp { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 2.5; stroke-dasharray: 7 4; }
   .measured { fill: none; stroke: var(--phpc-pond-color, #1e88e5); stroke-width: 2.5; }

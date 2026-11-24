@@ -15,12 +15,13 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 
-from .model import ModeClassifier, ModelParams
+from .model import BOOST_GAIN_RATIO, ModeClassifier, ModelParams
 from .samples import Sample
 
 GAIN_BOUNDS = (0.02, 1.0)  # K/h per kW
 K_BOUNDS = (0.001, 0.05)  # 1/h
 OFFSET_BOUNDS = (-0.05, 0.05)  # K/h
+FITTED_MODES = ("low", "high", "boost")
 DEFAULT_HIGH_LOW_RATIO = 0.69  # gain_high / gain_low until high mode has been learned
 NIGHT_START, NIGHT_END = 19, 7  # local hours used for the cooling fit
 
@@ -37,12 +38,14 @@ class Hour:
     outdoor: float
     p_low: float  # mean power in low mode over the hour, kW (0 in quarters with another mode)
     p_high: float  # same for high mode
+    p_boost: float  # same for boost mode
     cover: bool
     local_hour: int
     slope: float | None = None  # centred dT/dt in K/h over [h-2, h+2]
     # power and pond-outdoor difference averaged over the same window as the slope
     w_low: float = 0.0
     w_high: float = 0.0
+    w_boost: float = 0.0
     w_delta: float = 0.0
 
     @property
@@ -63,13 +66,14 @@ def hourly(samples: Sequence[Sample], tz: str, classifier: ModeClassifier) -> li
         if len(group) < 3:
             continue
         n = len(group)
-        modes = [classifier.mode(s.power) for s in group]
+        modes = [classifier.mode(s.power, s.preset) for s in group]
         hours[t] = Hour(
             t=t,
             pond=sum(s.pond for s in group) / n,
             outdoor=sum(s.outdoor for s in group) / n,
             p_low=sum(s.power for s, m in zip(group, modes, strict=True) if m == "low") / 1000 / n,
             p_high=sum(s.power for s, m in zip(group, modes, strict=True) if m == "high") / 1000 / n,
+            p_boost=sum(s.power for s, m in zip(group, modes, strict=True) if m == "boost") / 1000 / n,
             cover=sum(s.cover for s in group) * 2 > n,
             local_hour=datetime.fromtimestamp(t, zone).hour,
         )
@@ -80,6 +84,7 @@ def hourly(samples: Sequence[Sample], tz: str, classifier: ModeClassifier) -> li
         h.slope = (window[-1][0].pond - window[0][0].pond) / 4.0
         h.w_low = sum(x.p_low * w for x, w in window)
         h.w_high = sum(x.p_high * w for x, w in window)
+        h.w_boost = sum(x.p_boost * w for x, w in window)
         h.w_delta = sum((x.pond - x.outdoor) * w for x, w in window)
     return [hours[t] for t in sorted(hours)]
 
@@ -162,12 +167,15 @@ class SlowFit:
                 return params, report
 
         new = params.copy()
-        if "gain_low" in fit:
-            new.gain["low"] = self._blend(params.gain["low"], fit["gain_low"])
-        if "gain_high" in fit:
-            new.gain["high"] = self._blend(params.gain["high"], fit["gain_high"])
-        elif "gain_low" in fit and params.learned_at is None:
+        for mode in FITTED_MODES:
+            if f"gain_{mode}" in fit:
+                new.gain[mode] = self._blend(params.gain[mode], fit[f"gain_{mode}"])
+                if mode not in new.fitted:
+                    new.fitted.append(mode)
+        if "gain_high" not in fit and "gain_low" in fit and params.learned_at is None:
             new.gain["high"] = new.gain["low"] * DEFAULT_HIGH_LOW_RATIO
+        if "boost" not in new.fitted:
+            new.gain["boost"] = new.gain["high"] * BOOST_GAIN_RATIO  # until boost has been learned
         new.offset = self._blend(params.offset, fit["offset"])
         self._update_powers(new, ctx)
         new.learned_at = ctx.now
@@ -180,22 +188,17 @@ class SlowFit:
 
     def _least_squares(self, params: ModelParams, rows: list[Hour]) -> dict[str, float]:
         y = np.array([h.slope for h in rows])
-        p_low = np.array([h.w_low for h in rows])
-        p_high = np.array([h.w_high for h in rows])
         delta = np.array([h.w_delta for h in rows])
         cover = np.array([h.cover for h in rows], dtype=float)
 
         cols, names = [], []
-        if int((p_low > 0.05).sum()) >= self.min_mode_hours:
-            cols.append(p_low)
-            names.append("gain_low")
-        else:
-            y = y - params.gain["low"] * p_low
-        if int((p_high > 0.05).sum()) >= self.min_mode_hours:
-            cols.append(p_high)
-            names.append("gain_high")
-        else:
-            y = y - params.gain["high"] * p_high
+        for mode in FITTED_MODES:
+            p = np.array([getattr(h, f"w_{mode}") for h in rows])
+            if int((p > 0.05).sum()) >= self.min_mode_hours:
+                cols.append(p)
+                names.append(f"gain_{mode}")
+            else:
+                y = y - params.gain[mode] * p
         if int(cover.sum()) >= 48 and int((1 - cover).sum()) >= 48:
             cols += [-delta * (1 - cover), -delta * cover]
             names += ["k_open", "k_cover"]
@@ -210,8 +213,8 @@ class SlowFit:
     def _update_powers(self, params: ModelParams, ctx: LearningContext) -> None:
         start = ctx.now - self.days * 86400
         window = [s for s in ctx.samples if start <= s.t < ctx.now and s.power is not None]
-        for mode in ("low", "high"):
-            powers = sorted(s.power for s in window if ctx.classifier.mode(s.power) == mode)
+        for mode in FITTED_MODES:
+            powers = sorted(s.power for s in window if ctx.classifier.mode(s.power, s.preset) == mode)
             if len(powers) >= 4 * self.min_mode_hours:
                 params.power[mode] = powers[len(powers) // 2] / 1000
         params.samples_used = len(window)
@@ -237,9 +240,8 @@ class CoolingFit:
 
         gain = params.gain
         delta = np.array([h.w_delta for h in rows])
-        y = np.array(
-            [h.slope - gain["low"] * h.w_low - gain["high"] * h.w_high - params.offset for h in rows]
-        )
+        heat = [gain["low"] * h.w_low + gain["high"] * h.w_high + gain["boost"] * h.w_boost for h in rows]
+        y = np.array([h.slope - q - params.offset for h, q in zip(rows, heat, strict=True)])
         w = 0.5 ** (np.array([(ctx.now - h.t) / 86400 for h in rows]) / self.half_life_days)
         if float((w * delta).sum() / w.sum()) < self.min_delta:
             report.reason = "pond and outdoor temperature too close"

@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from homeassistant.components.climate import (
     ATTR_MAX_TEMP,
     ATTR_MIN_TEMP,
+    ATTR_PRESET_MODE,
+    ATTR_PRESET_MODES,
     ATTR_TARGET_TEMP_STEP,
+    SERVICE_SET_PRESET_MODE,
     SERVICE_SET_TEMPERATURE,
     HVACMode,
 )
@@ -21,6 +24,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 
 from .const import DOMAIN
+from .core.preset import NoPreset, PresetStrategy
 from .core.safety import Decision, MismatchTracker
 from .core.setpoint import SetpointStrategy
 
@@ -34,10 +38,11 @@ class ApplyResult:
     setpoint: float | None  # what was (or would be) sent
     sent: bool
     reason: str  # sent, unchanged, dry_run, heat_pump_off, unavailable, error
+    preset: str | None = None  # the preset for the decision (None: presets not configured)
 
 
 class HeatPumpController:
-    """Sends the setpoint for a decision to the climate entity, only when it changes."""
+    """Sends the preset and the setpoint for a decision to the climate entity, each only when it changes."""
 
     def __init__(
         self,
@@ -46,11 +51,13 @@ class HeatPumpController:
         climate_entity: str,
         strategy: SetpointStrategy,
         mismatch: MismatchTracker | None = None,
+        presets: PresetStrategy | None = None,
     ) -> None:
         self.hass = hass
         self.entry_id = entry_id
         self.climate_entity = climate_entity
         self.strategy = strategy
+        self.presets = presets or NoPreset()
         self.mismatch = mismatch or MismatchTracker()
         self.repair_raised = False
 
@@ -90,14 +97,16 @@ class HeatPumpController:
         if state is None:
             return ApplyResult(None, False, "unavailable")
         setpoint = self.setpoint_for(decision, inlet, pond, running)
+        preset = self.presets.preset(decision.mode)
         if not control:
-            return ApplyResult(setpoint, False, "dry_run")
+            return ApplyResult(setpoint, False, "dry_run", preset)
         if state.state == HVACMode.OFF:
-            return ApplyResult(setpoint, False, "heat_pump_off")
+            return ApplyResult(setpoint, False, "heat_pump_off", preset)
         self.mismatch.applied(decision.mode, now)
+        preset_sent = await self.async_set_preset(preset)
         current = state.attributes.get(ATTR_TEMPERATURE)
         if current is not None and float(current) == setpoint:
-            return ApplyResult(setpoint, False, "unchanged")
+            return ApplyResult(setpoint, preset_sent, "sent" if preset_sent else "unchanged", preset)
         try:
             await self.hass.services.async_call(
                 CLIMATE_DOMAIN,
@@ -107,8 +116,32 @@ class HeatPumpController:
             )
         except HomeAssistantError as err:
             _LOGGER.warning("Could not set %s to %s: %s", self.climate_entity, setpoint, err)
-            return ApplyResult(setpoint, False, "error")
-        return ApplyResult(setpoint, True, "sent")
+            return ApplyResult(setpoint, False, "error", preset)
+        return ApplyResult(setpoint, True, "sent", preset)
+
+    async def async_set_preset(self, preset: str | None) -> bool:
+        """Set the preset when it differs and the heat pump offers it; returns whether it was sent."""
+        state = self._climate()
+        if preset is None or state is None or state.attributes.get(ATTR_PRESET_MODE) == preset:
+            return False
+        if preset not in (state.attributes.get(ATTR_PRESET_MODES) or ()):
+            _LOGGER.warning("%s has no preset %s", self.climate_entity, preset)
+            return False
+        try:
+            await self.hass.services.async_call(
+                CLIMATE_DOMAIN,
+                SERVICE_SET_PRESET_MODE,
+                {ATTR_ENTITY_ID: self.climate_entity, ATTR_PRESET_MODE: preset},
+                blocking=True,
+            )
+        except HomeAssistantError as err:
+            _LOGGER.warning("Could not set the preset of %s to %s: %s", self.climate_entity, preset, err)
+            return False
+        return True
+
+    async def async_release(self) -> None:
+        """Control was turned off: leave the heat pump on the efficient preset."""
+        await self.async_set_preset(self.presets.preset("off"))
 
     def check_following(self, measured_mode: str | None, now: float) -> bool:
         """Track whether the heat pump follows; raise or clear the repair issue. Returns the mismatch."""

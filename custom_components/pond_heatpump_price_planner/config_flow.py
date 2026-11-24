@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 import voluptuous as vol
+from homeassistant.components.climate import ATTR_PRESET_MODES
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
@@ -46,10 +47,13 @@ from .const import (
     OPT_LANGUAGE,
     OPT_LOW_W,
     OPT_MARGIN,
+    OPT_OFFSET_BOOST,
     OPT_OFFSET_HIGH,
     OPT_OFFSET_LOW,
     OPT_OFFSET_OFF,
     OPT_OFFSET_START,
+    OPT_PRESET_CAPACITY,
+    OPT_PRESET_EFFICIENT,
     OPT_PRICE_ADDITION,
     OPT_PRICE_MULTIPLIER,
     OPT_RUN_THRESHOLD,
@@ -219,6 +223,7 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Required(OPT_OFFSET_OFF): _number(-5, 5, 0.5, "K"),
         vol.Required(OPT_OFFSET_LOW): _number(-5, 5, 0.5, "K"),
         vol.Required(OPT_OFFSET_HIGH): _number(-5, 5, 0.5, "K"),
+        vol.Required(OPT_OFFSET_BOOST): _number(-5, 5, 0.5, "K"),
         vol.Required(OPT_OFFSET_START): _number(-5, 5, 0.5, "K"),
         vol.Required(OPT_LOW_W): _number(0, 5000, 10, "W"),
         vol.Required(OPT_HIGH_W): _number(0, 10000, 10, "W"),
@@ -236,13 +241,40 @@ OPTIONS_SCHEMA = vol.Schema(
 )
 
 
+def options_schema(presets: list[str]) -> vol.Schema:
+    """The options form; the preset fields only when the heat pump has presets."""
+    if not presets:
+        return OPTIONS_SCHEMA
+    choice = selector.SelectSelector(
+        selector.SelectSelectorConfig(options=presets, mode=selector.SelectSelectorMode.DROPDOWN)
+    )
+    return OPTIONS_SCHEMA.extend(
+        {vol.Optional(OPT_PRESET_EFFICIENT): choice, vol.Optional(OPT_PRESET_CAPACITY): choice}
+    )
+
+
 class PondPlannerOptionsFlow(OptionsFlow):
     """All tuning values in one form; saving reloads the entry."""
 
+    def _presets(self) -> list[str]:
+        state = self.hass.states.get(self.config_entry.data.get(CONF_CLIMATE, ""))
+        return [str(p) for p in (state.attributes.get(ATTR_PRESET_MODES) or [])] if state else []
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        schema = options_schema(self._presets())
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            errors = {}
+            efficient, capacity = user_input.get(OPT_PRESET_EFFICIENT), user_input.get(OPT_PRESET_CAPACITY)
+            if bool(efficient) != bool(capacity) or (efficient and efficient == capacity):
+                errors[OPT_PRESET_CAPACITY] = "presets_incomplete"
+            if not errors:
+                return self.async_create_entry(data=user_input)
+            return self.async_show_form(
+                step_id="init",
+                data_schema=self.add_suggested_values_to_schema(schema, user_input),
+                errors=errors,
+            )
         current = {**DEFAULT_OPTIONS, **self.config_entry.options}
         return self.async_show_form(
-            step_id="init", data_schema=self.add_suggested_values_to_schema(OPTIONS_SCHEMA, current)
+            step_id="init", data_schema=self.add_suggested_values_to_schema(schema, current)
         )

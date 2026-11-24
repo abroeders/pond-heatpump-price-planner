@@ -1,4 +1,13 @@
-from core.samples import QUARTER, PowerIntegrator, Sample, merge, prune, quarter_start, to_quarters
+from core.samples import (
+    QUARTER,
+    PowerIntegrator,
+    Sample,
+    fill_presets,
+    merge,
+    prune,
+    quarter_start,
+    to_quarters,
+)
 
 
 def test_quarter_start():
@@ -59,3 +68,30 @@ def test_sample_roundtrip_prune_and_merge():
     new = [Sample(900, 2, 2, 2)]
     assert [x.pond for x in merge(old, new)] == [1, 2]
     assert prune(old, now=42 * 86400 + 900, days=42) == [Sample(900, 1, 1, 1)]
+
+
+def test_sample_keeps_the_preset_and_reads_older_rows():
+    s = Sample(900.0, 14.2, 6.1, 1100.0, False, 0.31, "quick_heat")
+    assert Sample.from_list(s.to_list()) == s
+    assert Sample.from_list([0, 1.0, 2.0, 3.0, 0, 0.3]).preset is None  # stored before presets were kept
+
+
+def test_to_quarters_takes_the_preset_at_the_end_of_the_quarter():
+    series = {
+        "pond": [(0, 14.0)],
+        "outdoor": [(0, 5.0)],
+        "power": [(0, 900.0)],
+        "preset": [(0, "quiet_heat"), (1000, "quick_heat")],
+    }
+    q = to_quarters(series, 0, 2 * QUARTER)
+    assert [s.preset for s in q] == ["quiet_heat", "quick_heat"]
+    assert to_quarters({k: v for k, v in series.items() if k != "preset"}, 0, QUARTER)[0].preset is None
+
+
+def test_fill_presets_only_fills_missing_presets_after_the_first_change():
+    samples = [Sample(i * QUARTER, 14, 5, 900) for i in range(4)]
+    samples[3].preset = "kept"
+    filled = fill_presets(samples, [(QUARTER + 100, "quiet_heat"), (2 * QUARTER + 100, "quick_heat")])
+    assert filled == 2
+    assert [s.preset for s in samples] == [None, "quiet_heat", "quick_heat", "kept"]
+    assert fill_presets(samples, []) == 0
