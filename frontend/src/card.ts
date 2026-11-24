@@ -91,7 +91,9 @@ export class PondHeatpumpPlannerCard extends LitElement {
   }
 
   private call(domain: string, service: string, data: Record<string, unknown>) {
-    this._hass?.callService(domain, service, data);
+    this._hass?.callService(domain, service, data).catch((err: unknown) => {
+      console.error(`${domain}.${service} failed`, err);
+    });
   }
 
   private content(name: Section, vm: CardViewModel): TemplateResult | typeof nothing {

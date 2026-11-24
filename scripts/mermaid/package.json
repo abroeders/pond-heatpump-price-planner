@@ -1,0 +1,10 @@
+{
+  "name": "pond-heatpump-mermaid-check",
+  "private": true,
+  "description": "Parses the Mermaid diagrams in the docs",
+  "type": "module",
+  "devDependencies": {
+    "jsdom": "24.1.3",
+    "mermaid": "11.17.2"
+  }
+}
