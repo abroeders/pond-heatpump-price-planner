@@ -1,4 +1,8 @@
-# Core tests and lint (pure Python, no Home Assistant).
+# Core tests and lint (pure Python, no Home Assistant). Full resolved set, including transitive dependencies.
+iniconfig==2.3.1
 numpy==2.5.5
+packaging==26.4
+pluggy==1.7.0
+pygments==2.21.0
 pytest==9.2.0
 ruff==0.17.6

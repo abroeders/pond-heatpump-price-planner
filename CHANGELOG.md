@@ -7,6 +7,11 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- CI: Dependabot updates go to `develop`, grouped per ecosystem and without major versions; the minimum
+  Home Assistant test version stays fixed, and the test dependencies are locked including transitive ones (#51).
+
 ## [2026.11.5] - 2026-11-24
 
 ### Added
