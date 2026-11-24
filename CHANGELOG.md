@@ -7,6 +7,10 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- CI: the test dependencies are installed with `--require-hashes` (#51).
+
 ## [2026.11.6] - 2026-11-24
 
 ### Changed
