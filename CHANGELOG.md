@@ -12,6 +12,13 @@ earlier releases used [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - The heat pump drawing of the card showed a stopped heat pump when no `fan`, `compressor` or `flow` entity
   was configured. These parts now follow the measured mode of the planner, and the water flow the circulation
   sensor linked in the integration (#36).
+- A failed service call from the card (thermostat, band, switches) is logged in the browser console instead of
+  ending as an unhandled error (#39).
+
+### Changed
+
+- CI: pinned dependencies and action versions, Dependabot updates, and the Home Assistant tests run on both the
+  minimum supported version and the latest release (#39).
 
 ## [2026.11.4] - 2026-11-20
 

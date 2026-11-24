@@ -1,5 +1,5 @@
-// Parses every ```mermaid block in the given Markdown files. Usage: node scripts/check_mermaid.mjs docs/*.md
-// Needs: npm install --no-save mermaid@11 jsdom@24
+// Parses every ```mermaid block in the given Markdown files.
+// Usage: npm ci --prefix scripts/mermaid && node scripts/mermaid/check_mermaid.mjs docs/*.md
 import { JSDOM } from "jsdom";
 import fs from "node:fs";
 
