@@ -26,7 +26,7 @@ def state(hass: HomeAssistant, domain: str, key: str):
     from homeassistant.helpers import entity_registry as er
 
     entity_id = er.async_get(hass).async_get_entity_id(domain, DOMAIN, f"{hass.data['_entry_id']}_{key}")
-    return hass.states.get(entity_id)
+    return hass.states.get(entity_id) if entity_id else None
 
 
 async def test_setup_creates_entities_and_plans_in_dry_run(hass: HomeAssistant, pond_states) -> None:
