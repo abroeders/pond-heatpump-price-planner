@@ -259,6 +259,17 @@ change stays small. The classifier would then need a power threshold between the
 - Modelling defrost cycles.
 - Cooling presets.
 
-## 12. Open questions
+## 12. Implementation notes
+
+The build differs from the sections above in three small points:
+- **Boost gain before learning (§5):** boost starts at 0.9 × the gain of high, not equal to it. With equal
+  gains, boost would look as efficient as high before it has been learned, and the planner would use it to
+  store heat in cheap quarters.
+- **Options (§7):** the options flow is one form, so the preset fields are part of it. They appear only when
+  the climate entity has `preset_modes`. One preset, or the same preset twice, gives the error
+  `presets_incomplete`.
+- **`apply_result` (§6):** this is `sent` when only the preset was sent.
+
+## 13. Open questions
 
 - **Fifth mode:** the setpoint +0 test from §9, tracked in #38. It does not block this design.

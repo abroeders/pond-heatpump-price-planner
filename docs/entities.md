@@ -30,7 +30,7 @@ The settings are stored by the integration and survive a restart.
 
 | Key | Unit | Meaning | Attributes |
 |---|---|---|---|
-| `mode` | `off`, `low`, `high` | the mode applied (or, in dry run, that would be applied) now | `reason`, `reason_text`, `plan_mode`, `measured_mode`, `control`, `would_set`, `apply_result`, `apply_result_text`, `mismatch`, `price_status`, `price_status_text`, `language`, `horizon_end`, `plan`, `pond_history` |
+| `mode` | `off`, `low`, `high`, `boost` | the mode applied (or, in dry run, that would be applied) now; `boost` only with [presets](configuration.md#boost-capacity-preset) | `reason`, `reason_text`, `plan_mode`, `measured_mode`, `preset`, `control`, `would_set`, `apply_result`, `apply_result_text`, `mismatch`, `price_status`, `price_status_text`, `language`, `horizon_end`, `plan`, `pond_history` |
 | `next_start` | timestamp | next quarter in which the plan switches the heat pump on | – |
 | `next_stop` | timestamp | next quarter in which the plan switches it off | – |
 | `planned_energy` | kWh | planned electricity (not heat) for the next 24 h | – |
@@ -43,21 +43,26 @@ The settings are stored by the integration and survive a restart.
 |---|---|
 | `plan` | the plan's mode |
 | `below_band` | the pond is below the band: at least low |
-| `far_below_band` | more than 0.3 K below the band: high (or low if high is not allowed) |
+| `far_below_band` | more than 0.3 K below the band: boost when configured, otherwise high (or low if high is not allowed) |
 | `above_band` | above the band: off |
 | `no_pond_temperature` | the pond sensor is unavailable, or has not reported for 6 h: low |
 | `no_plan` | no plan could be made: simple thermostat |
 
 **`apply_result`**: `sent`, `unchanged`, `dry_run`, `heat_pump_off` (the heat pump itself is switched off),
-`unavailable`, `error`.
+`unavailable`, `error`. `sent` also when only the preset was changed.
+
+**`preset`**: the preset that belongs to the mode (sent with control on), or empty without presets.
+
+**`measured_mode`**: off, low or high from the mean power, and boost when the heat pump is on the capacity
+preset and its power is at least `high_w`.
 
 **`plan`**: one entry per quarter with `start`, `mode`, `temp` (predicted pond temperature at the end of the
 quarter), `price` (effective €/kWh), `known` (false where the price comes from the price forecast) and, with
 solar configured, `surplus` (kW). It is not stored in the recorder.
 
 **`pond_history`**: the pond temperature of the last 48 h, one entry per quarter with `time` (end of the
-quarter) and `temp`, plus `mode` (the measured mode: off, low or high from the mean power of the
-quarter) and `price` (effective €/kWh of the quarter) when they are known. The card draws the last 24 h in the thermostat and the history part of the plan chart (temperature, mode bars, prices). It is not stored in the recorder.
+quarter) and `temp`, plus `mode` (the measured mode: off, low, high or boost from the mean power and the
+preset of the quarter) and `price` (effective €/kWh of the quarter) when they are known. The card draws the last 24 h in the thermostat and the history part of the plan chart (temperature, mode bars, prices). It is not stored in the recorder.
 
 **`price_status`**:
 
@@ -98,6 +103,7 @@ link.
 | `cooling_coefficient` | 1/h | cooling of the pond to the outdoor air, for the current cover state | `k_open`, `k_cover` |
 | `heating_rate_low` | K/h | how fast low power warms the pond | `gain`, `power_kw` |
 | `heating_rate_high` | K/h | the same for high power | `gain`, `power_kw` |
+| `heating_rate_boost` | K/h | the same for boost; only with [presets](configuration.md#boost-capacity-preset) | `gain`, `power_kw` |
 | `prediction_error` | K | mean absolute error of the 4-hour prediction over the last 24 h | `checked` |
 | `model_status` | timestamp | when the model was last learned | `reports`, `model_check`, `samples`, `links` (the linked entities; the card uses them as defaults) |
 | `surcharge` | €/kWh | the surcharge on expensive quarters in use | `auto`, `costs` per candidate, `days`, `reason`, `at` |
